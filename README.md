@@ -77,24 +77,33 @@ The order is fixed, and filtering before pruning is enforced by test.
 10. Convert the inferred profile into internal objective weights; the user is never asked for weights.
 11. Score the remaining candidates, cap the candidate set, and optionally build provider-constrained
     batch-transfer plans.
-12. Build a compact binary-index QUBO where `n` candidate rows or batch plans use
-    `ceil(log2(n))` qubits.
+12. Build a one-hot QUBO where `n` candidate rows or batch plans use `n` qubits, so every
+    candidate score enters the Hamiltonian exactly.
 13. Verify QUBO equivalence. **A failed check aborts the run before QAOA.**
 14. Compare business as usual, exact optimization, lowest-fee/fastest/lowest-FX heuristics,
     simulated annealing, and QAOA.
 15. Validate every solver's samples before reporting any metric.
 
-Steps 8 and 10 are gates, not diagnostics. Neither can be bypassed from the UI.
+Steps 13 and 15 are gates, not diagnostics. Neither can be bypassed from the UI.
 
 ## Metrics
 
-Feasibility rate, objective value, relative optimality gap, optimum-hit probability, end-to-end
-runtime, stability, and time to solution. All seven are defined in `qkash/benchmark.py` and computed
-identically for all solvers.
+Quality: feasibility rate, objective value, relative optimality gap, optimum-hit probability, and
+stability.
 
-The solvers are not measured on equal footing: deterministic baselines produce one sample, while
-annealing and QAOA produce distributions. Read
-[Comparison caveats](docs/qaoa_experiment.md#comparison-caveats) before ranking them.
+Cost is reported on **three separate clocks**, because comparing a queued remote device to a local
+simulator on wall clock measures the provider's queue rather than the algorithm:
+
+| Clock | Meaning |
+| --- | --- |
+| `end_to_end_runtime_s` | Total wall clock, queue and network included |
+| `compute_runtime_s` | Work the algorithm actually did — **the ranking basis** |
+| `device_runtime_s` | Quantum circuit execution only (`NaN` for classical solvers) |
+
+All are defined in `qkash/benchmark.py` and computed identically for every solver. Solvers are not
+measured on equal footing: deterministic baselines produce one sample, while annealing and QAOA
+produce distributions. Read
+[Interpretation limits](docs/qaoa_experiment.md#interpretation-limits) before ranking them.
 
 ## qBraid
 

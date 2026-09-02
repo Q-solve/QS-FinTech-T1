@@ -1,6 +1,6 @@
 # Classical provider/service-selection model
 
-This document specifies the classical model that QKash uses before building the verified compact
+This document specifies the classical model that QKash uses before building the verified
 QUBO.
 
 ## Scope
@@ -100,7 +100,7 @@ O(n), exact, and expected to beat QAOA on small single-transfer instances.
 | Lowest-fee heuristic | `lowest_fee_heuristic` | Picks the lowest transaction fee, then weighted score as tie-breaker. |
 | Fastest-transfer heuristic | `fastest_transfer_heuristic` | Picks the lowest time loss, then weighted score as tie-breaker. |
 | Lowest-FX heuristic | `lowest_fx_heuristic` | Picks the lowest FX-spread loss, then weighted score as tie-breaker. |
-| Simulated annealing | `simulated_annealing` | Stochastic compact-QUBO sampler using Metropolis single-bit flips. |
+| Simulated annealing | `simulated_annealing` | Stochastic QUBO sampler using Metropolis single-bit flips over the one-hot model. |
 
 All solvers return the same result shape: `algorithm`, `best_index`, `samples`, and `runtime_s`.
 `validate_solver_outputs` checks those samples before metrics are reported.

@@ -66,10 +66,12 @@ Research settings can also build batch plans by assigning several same-context
 transfers to eligible services while enforcing a maximum provider-concentration
 share. Each batch plan is then treated as one candidate row.
 
-The QUBO uses compact binary-index encoding: `n` candidate rows require
-`ceil(log2(n))` qubits, and measured basis states above `n - 1` are infeasible.
-`MODEL_CANDIDATE_CAP` limits the maximum number of model candidates sent to the
-QUBO.
+The QUBO uses one-hot encoding: `n` candidate rows require `n` qubits, and a
+measured bitstring is feasible only when exactly one bit is set.
+`MODEL_CANDIDATE_CAP` (equal to `DEFAULT_MAX_QUBITS`, 20) limits the number of
+model candidates sent to the QUBO, and therefore the circuit width. See
+[qubo_formulation.md](qubo_formulation.md#why-not-a-compact-binary-index-encoding)
+for why a logarithmic encoding cannot carry the objective.
 
 Before QAOA runs, `verify_qubo_equivalence` checks that the QUBO optimum matches
 the exact optimum of the original constrained model. Failure aborts quantum
@@ -108,9 +110,14 @@ The research dashboard reports charts and tables for:
 - Objective value.
 - Relative optimality gap.
 - Optimum-hit probability.
-- End-to-end runtime.
+- End-to-end runtime (wall clock, queue included).
+- Compute runtime (queue, network, and submission removed) — the ranking basis.
+- Device runtime (quantum circuit execution only).
 - Stability.
-- Time to solution.
+- Time to solution, on both the wall-clock and compute clocks.
 - Inferred ML profile and internal policy weights.
 - QUBO validation details.
 - QAOA circuit details.
+
+See [qaoa_experiment.md](qaoa_experiment.md#cost--three-clocks) for why cost is
+ranked on the compute clock rather than wall clock.

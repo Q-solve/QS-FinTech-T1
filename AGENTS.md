@@ -58,12 +58,18 @@ outcome.
 - Min-max normalization is computed over the filtered candidate pool, not over the final modelled
   subset. Record the normalization method, bounds, direction, treatment of constants and outliers,
   and weight semantics whenever they change.
-- `TARGET_QUBITS` in `app.py` fixes both the candidate count and the QAOA qubit count at 5. A run
-  that cannot supply 5 real candidates must fail loudly rather than pad the model with synthetic rows.
-- Every qubit must map to a real candidate row. When strict Pareto pruning yields fewer than
-  `TARGET_QUBITS` rows, `select_qubo_candidates` fills the remaining slots with next-best scored rows
-  and labels them `Best scored fallback` in the `model_source` column. That label must stay visible
-  in the UI.
+- The QUBO uses **one-hot encoding**: `n` candidates require `n` qubits. `MODEL_CANDIDATE_CAP` in
+  `app.py` equals `DEFAULT_MAX_QUBITS` (20) and caps the candidate set before the QUBO is built, so
+  circuit width stays bounded. A run that cannot supply real candidates must fail loudly rather than
+  pad the model with synthetic rows.
+- **Never reintroduce a compact binary-index QUBO.** A quadratic form over `ceil(log2 n)` index bits
+  cannot represent an arbitrary score vector for `n >= 8`, and the previous implementation worked
+  around this by solving the model classically and planting the answer — which made the verification
+  gate a tautology and QAOA hit rates meaningless. `build_selection_qubo` raises on that encoding.
+  See `docs/qubo_formulation.md`.
+- Every qubit must map to a real candidate row. `select_qubo_candidates` uses the Pareto frontier by
+  default; its `allow_fallback` mode fills remaining slots with next-best scored rows labelled
+  `Best scored fallback` in the `model_source` column. That label must stay visible in the UI.
 - Provider selection and network routing are separate formulations. This dataset supports
   direct-corridor provider/service selection. It contains no route sequences, intermediate transfers,
   capacities, or edge compatibility, so it does not by itself support true network routing.
@@ -81,9 +87,14 @@ outcome.
 - Use the same objective, constraints, eligible instances, normalization, and runtime accounting
   across all four solvers: business as usual, exact mathematical baseline, simulated annealing, QAOA.
 - Measure feasibility rate, objective value, relative optimality gap, optimum-hit probability,
-  end-to-end runtime, stability, and time to solution. `qkash/benchmark.py` is the single source of
-  truth for these definitions.
-- Report distributions across repeated seeds, not a single favorable run.
+  stability, and time to solution. `qkash/benchmark.py` is the single source of truth.
+- Account for runtime on three clocks: `end_to_end_runtime_s` (wall clock, queue included),
+  `compute_runtime_s` (queue/network/submission removed), and `device_runtime_s` (quantum execution
+  only). **Rank on the compute clock**, never wall clock — otherwise a busy provider queue decides
+  which solver looks best. Keep `end_to_end_runtime_s` visible as the honest total cost.
+- Report distributions across repeated seeds, not a single favorable run. Ten seeds is not enough:
+  a ten-seed run of the reference instance suggested QAOA beat uniform sampling, and that finding
+  did not survive 25 seeds with a confidence interval. Quote an interval or a p-value.
 - Never display fabricated quantum savings, advantage, or hardware results in code, docs, tests, or
   the UI. A skipped or failed QAOA run must surface as `status = "skipped"` or `"failed"` with its
   note, not as a silent omission.
@@ -109,6 +120,15 @@ QAOA uses a fixed three-step execution order, and it is not negotiable:
 The app never submits qBraid jobs during parameter optimization. Secrets are read from `.env` only;
 `.env.example` is a tracked template and is never read for credentials. `qbraid_status()` must stay
 secret-free — it reports whether a key is present, never the key.
+
+## Running the app
+
+Streamlit's file watcher must stay disabled (`fileWatcherType = "none"` in `.streamlit/config.toml`).
+Its `LocalSourcesWatcher.flush_pending_evictions()` pops watched modules out of `sys.modules` at the
+start of each script run; re-importing `qkash.quantum` and then running Qiskit work on the fresh
+ScriptRunner thread segfaults inside `qiskit/_accelerate.abi3.so`. On WSL the poll-based watcher
+sees spurious mtime changes on drvfs, so this fires without anyone editing a file. The cost is no
+hot reload: restart the server after editing `app.py` or `qkash/*.py`.
 
 ## Engineering workflow
 

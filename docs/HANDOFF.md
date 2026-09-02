@@ -6,21 +6,26 @@ against the code in the repository, not assumed.
 
 ## Next task
 
-**Presentation of the data and the algorithm.** Before starting, read
-[Stale documentation](#stale-documentation-blocking) — five documents currently describe an
-encoding that no longer exists, and one of them documents the exact bug that was removed. Presenting
-from them would reproduce the bug in the narrative.
+**Presentation of the data and the algorithm.** The docs are now current and safe to present from —
+see [Documentation — brought current](#documentation--brought-current). The substantive story they
+now tell: QAOA reproduces the one-hot constraint but does **not** discriminate among feasible
+candidates at any depth tested (25 seeds, all confidence intervals contain the uniform baseline).
+Present that as the honest finding rather than looking for an advantage claim.
 
 ## Repository state
 
 - Branch `kelly`, HEAD `0b63c96` "Refactor QUBO encoding to use one-hot representation and enhance
   runtime reporting".
-- **Uncommitted**: `app.py`, `qkash/benchmark.py`, `qkash/quantum.py`, `tests/test_core.py` —
-  120 insertions, the runtime-accounting and metric-ranking work described below.
+- **Uncommitted**: the runtime-accounting and metric-ranking work (`app.py`, `qkash/benchmark.py`,
+  `qkash/quantum.py`, `tests/test_core.py`), the Streamlit watcher fix
+  (`.streamlit/config.toml`), and the documentation rewrite (`README.md`, `AGENTS.md`,
+  `docs/*.md`).
 - 36 tests pass. Run with `./.venv/bin/python -m pytest -q`.
-- `.venv` has pandas 3.0.5, numpy 2.5.2, scipy 1.18.1, qiskit 2.5.2, qiskit-aer 0.17.2, pytest 9.1.1.
-  **streamlit and qbraid are NOT installed**, so `app.py` cannot be launched and the qBraid path
-  cannot be exercised in this environment.
+- `.venv` (Python 3.14.4) has pandas 3.0.5, numpy 2.5.2, scipy 1.18.1, qiskit 2.5.2,
+  qiskit-aer 0.17.2, streamlit 1.63.0, scikit-learn 1.9.0, qbraid, pytest 9.1.1.
+- `app.py` launches and completes end-to-end (verified with `streamlit.testing.v1.AppTest`,
+  including a "Run optimization" click). The **qBraid remote path still cannot be exercised** here —
+  no API key — so device-timing extraction remains unverified against a live job.
 
 ## The critical fix this session: the QUBO was solving a planted answer
 
@@ -119,26 +124,43 @@ left ordering to input order — an existing test caught this.
 but has **never run against a live qBraid job**. Field names come from reading qbraid_core 0.12.2.
 Confirm with one real run before relying on the numbers.
 
-## Stale documentation (blocking)
+## Documentation — brought current
 
-These describe the **removed** binary-index encoding and must be rewritten before any presentation:
+All docs were rewritten against the code and every figure in them re-measured:
 
-- `docs/qubo_formulation.md` — worst offender. Section "Compact binary-index variables"; line 62
-  states *"the compact Hamiltonian is built from the exact optimum"*, documenting the planted-answer
-  bug as if it were a design feature.
-- `docs/qaoa_experiment.md`
-- `docs/development_plan.md`
-- `docs/algorithm_flow.md`
-- `README.md`
+- `qubo_formulation.md` — full rewrite for one-hot, with the rank-deficiency reason a compact
+  binary-index QUBO cannot work, the falsifiable penalty condition, a re-measured reference
+  instance and energy spectrum, and a historical note on the removed planted-answer construction.
+- `qaoa_experiment.md` — one-hot decoding and validation, the three runtime clocks, qBraid device
+  timing and its queue-inclusive fallback, and 25-seed reference results with confidence intervals.
+- `algorithm_flow.md`, `classical_model.md`, `development_plan.md`, `README.md` — encoding, metric
+  list, and pipeline-step numbering corrected (`README` said "steps 8 and 10 are gates" after the
+  steps had been renumbered; the gates are 13 and 15).
+- `AGENTS.md` — removed the stale `TARGET_QUBITS` rule (that constant no longer exists), added a
+  standing prohibition on reintroducing the compact encoding, the compute-clock ranking rule, the
+  seed-count rule, and the Streamlit watcher requirement.
 
-None of the docs mention the three runtime clocks. Reference figures in `classical_model.md` and
-`qubo_formulation.md` were computed under the old encoding and are no longer reproducible.
+All internal links and heading anchors verified; every reproducible command in the docs re-run.
+
+## Streamlit segfault — diagnosed and fixed
+
+`python -m streamlit run app.py` segfaulted on startup, twice, in `qiskit/_accelerate.abi3.so` on
+the `ScriptRunner` thread.
+
+Root cause: `LocalSourcesWatcher.flush_pending_evictions()` pops watched modules out of
+`sys.modules` at the start of each script run. Re-importing `qkash.quantum` and then running Qiskit
+work on the fresh ScriptRunner thread crashes. Bisected — it needs all three of eviction,
+re-import, and a new thread; any two alone are fine. On WSL the poll-based watcher sees spurious
+drvfs mtime changes, so it fires with no file edited.
+
+Fix: `fileWatcherType = "none"` in `.streamlit/config.toml`, with a comment explaining why. Cost:
+no hot reload, restart after editing `app.py` or `qkash/*.py`.
 
 ## Known-open issues
 
 | # | Issue | Severity |
 | --- | --- | --- |
-| 1 | Five docs describe the removed encoding; one documents the planted-solution bug as a feature | High |
+| 1 | ~~Docs describe the removed encoding~~ — **resolved**, all rewritten and re-measured | Closed |
 | 2 | `pickup method` option `Mobile` is offered by the UI but always returns 0 rows (`unique_values` tokenizes, `_filter_exact` does not). 250 rows contain the word. | High |
 | 3 | `data/rpw_dataset_2011_2025_q3.xlsx` (674 KB) is tracked, against the stated data policy — `.gitignore` covers `data/**/*.csv` only | Medium |
 | 4 | `data/lu32416013pb4e.tmp` (0 bytes) is tracked — stray temp file | Low |

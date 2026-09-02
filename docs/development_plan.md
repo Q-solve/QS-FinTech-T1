@@ -115,9 +115,15 @@ Exit criteria met:
 
 - `verify_qubo_equivalence` gates every run and `app.py` aborts on failure.
 - `validate_solver_outputs` gates every metric.
-- Compact binary-index encoding is documented in [`qubo_formulation.md`](qubo_formulation.md),
-  including the fact that the current Hamiltonian is optimum-preserving rather than a full one-hot
-  score landscape.
+- One-hot encoding is documented in [`qubo_formulation.md`](qubo_formulation.md), including the
+  measured reason a compact binary-index QUBO cannot carry the objective, and the penalty condition
+  `A > min(s)` that makes verification genuinely falsifiable.
+- The earlier optimum-preserving Hamiltonian — which solved the model classically and planted the
+  answer, making the verification gate a tautology — has been removed. The historical note in
+  `qubo_formulation.md` records why it must not be reintroduced.
+- Runtime is accounted on three clocks (wall, compute, device) and solvers are ranked on the compute
+  clock, so a remote queue cannot change the ordering. See
+  [`qaoa_experiment.md`](qaoa_experiment.md#cost--three-clocks).
 - QAOA execution order is documented in [`qaoa_experiment.md`](qaoa_experiment.md): optimize
   parameters locally with Aer, construct the optimized circuit, then execute the final circuit
   locally or through qBraid.
