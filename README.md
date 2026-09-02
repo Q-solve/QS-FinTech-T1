@@ -1,45 +1,129 @@
 # QKash
 
-QKash optimizes East Africa remittance provider selection from the RPW CSV data.
+QKash recommends a cross-border remittance provider/service for East African corridors, and compares
+QAOA against classical baselines on the same model. It is a research prototype: it does not claim
+quantum advantage, and its experiments are designed to test for one rather than assume it.
 
-## Flow
+## Documentation
 
-1. Load `data/rpw_dataset_2011_2025_q3_EastAfrica.csv`.
-2. Apply user filters before Pareto pruning.
-3. Convert the priority query into three objective weights: transaction fee,
-   time, and FX spread.
-4. Calculate normalized weighted scores.
-5. Pareto prune dominated candidates.
-6. Build the constrained one-hot model and equivalent QUBO.
-7. Verify QUBO equivalence before running QAOA.
-8. Compare business-as-usual, exact, simulated annealing, and QAOA outcomes.
+| Document | Contents |
+| --- | --- |
+| [`docs/data_audit.md`](docs/data_audit.md) | What the dataset contains, which fields are read, and every known defect |
+| [`docs/classical_model.md`](docs/classical_model.md) | Objectives, normalization, weights, Pareto pruning, classical solvers |
+| [`docs/qubo_formulation.md`](docs/qubo_formulation.md) | QUBO construction, penalty condition, Ising conversion, verification |
+| [`docs/qaoa_experiment.md`](docs/qaoa_experiment.md) | QAOA algorithm, backends, bit order, metrics, caveats |
+| [`docs/development_plan.md`](docs/development_plan.md) | Staged plan, current status, what is outstanding |
+| [`AGENTS.md`](AGENTS.md) | Repository-wide engineering and modeling rules |
 
-## Run
+## Getting the data
+
+**The datasets are not tracked by Git.** `data/*.csv` is excluded by `.gitignore`, so a fresh clone
+has no data and `app.py` will raise `FileNotFoundError` on startup.
+
+Obtain both World Bank Remittance Prices Worldwide extracts from the project owner, place them in
+`data/`, and verify their integrity:
 
 ```bash
-/home/thairu/python4code/bin/pip install -r requirements.txt
-/home/thairu/python4code/bin/python -m streamlit run app.py
+sha256sum data/rpw_dataset_2011_2025_q3_EastAfrica.csv
+# d6a657c5f0068057c36fc682dea054b543d47d907e35246fcdb8364fd3bed16f
 ```
 
-In VS Code, select `/home/thairu/python4code/bin/python` as the Python
-interpreter. This repository intentionally does not keep a project-local
-virtual environment.
+`data/rpw_dataset_2011_2025_q3_EastAfrica.csv` is the file the application reads.
+`data/rpw_dataset_2011_2025_q3_EastAfrica2.csv` is the 30-column source export, retained for
+provenance. See [Source, method, and integrity](docs/data_audit.md#source-method-and-integrity).
+
+The test suite builds its own synthetic DataFrame and does **not** need the CSVs. `pytest` passes on
+a clean clone.
+
+## Running
+
+```bash
+pip install -r requirements.txt
+python -m streamlit run app.py
+```
+
+This repository intentionally keeps no project-local virtual environment under version control.
+`.vscode/settings.json` pins the interpreter path; adjust it to your own environment.
+
+```bash
+pytest
+```
+
+## Pipeline
+
+The order is fixed, and filtering before pruning is enforced by test.
+
+1. Load `data/rpw_dataset_2011_2025_q3_EastAfrica.csv`.
+2. Apply corridor, payment-instrument, and pickup-method filters.
+3. Select the amount tier (`cc1` = 200 denomination, `cc2` = 500) and build numeric features.
+4. Convert the priority query into three objective weights — transaction fee, transfer time, FX
+   spread.
+5. Compute normalized weighted scores.
+6. Pareto prune, then backfill to a fixed five-candidate model set.
+7. Build the constrained one-hot model and its equivalent QUBO.
+8. Verify QUBO equivalence. **A failed check aborts the run.**
+9. Compare business as usual, exact enumeration, simulated annealing, and QAOA.
+10. Validate every solver's samples before reporting any metric.
+
+Steps 8 and 10 are gates, not diagnostics. Neither can be bypassed from the UI.
 
 ## Metrics
 
-QKash reports feasibility rate, objective value, relative optimality gap,
-optimum-hit probability, end-to-end runtime, stability, and time to solution.
+Feasibility rate, objective value, relative optimality gap, optimum-hit probability, end-to-end
+runtime, stability, and time to solution. All seven are defined in `qkash/benchmark.py` and computed
+identically for all four solvers.
+
+The four solvers are not measured on equal footing — two are deterministic single-sample methods,
+two produce distributions. Read
+[Comparison caveats](docs/qaoa_experiment.md#comparison-caveats) before ranking them.
 
 ## qBraid
 
-Copy `.env.example` to `.env` or export the variables in your shell.
-`.env.example` is a template only and is not read for secrets.
+Copy `.env.example` to `.env` or export the variables in your shell. `.env.example` is a tracked
+template and is never read for secrets.
 
-QAOA uses this execution order:
+```
+QBRAID_API_KEY=
+QBRAID_PROVIDER=qbraid
+QBRAID_DEVICE_ID=qbraid:qbraid:sim:qir-sv
+QKASH_USE_QBRAID=false
+```
+
+QAOA uses a fixed execution order:
 
 1. Optimize gamma and beta locally with Qiskit Aer.
 2. Construct the optimized measured circuit.
-3. Execute the final circuit with either `LocalAerBackend` or `QBraidBackend`.
+3. Execute that final circuit once, with either `LocalAerBackend` or `QBraidBackend`.
 
-The app never submits qBraid jobs during parameter optimization. qBraid is only
-used for the final optimized circuit when the qBraid backend is selected.
+**The app never submits qBraid jobs during parameter optimization.** qBraid is used only for the
+final optimized circuit, and only when the qBraid backend is selected.
+
+## Known limitations
+
+These are documented in full in the linked pages, and are summarized here so they are not
+discovered late:
+
+- **No period filter is applied by default**, so a candidate set can mix quarters years apart. See
+  [Limitations](docs/classical_model.md#limitations).
+- **246 rows in the 2025 periods fail date parsing**, which corrupts any recency-based selection.
+- **The `Mobile` pickup-method filter option always returns zero rows.** It is generated by
+  tokenizing but matched exactly. Use `Mobile wallet`.
+- **The default priority query is not balanced** — it weights FX spread 49% above the other two
+  objectives. Use the sliders or an explicit `fee=… time=… fx=…` override.
+- **One-of-N selection is classically trivial.** The five-qubit instance validates the
+  implementation; it is not evidence of advantage. Measured across 10 seeds, QAOA reproduces the
+  one-hot constraint but selects among feasible candidates at roughly the uniform rate. See
+  [Reference results](docs/qaoa_experiment.md#reference-results).
+
+## Layout
+
+```
+app.py                  Streamlit UI and run orchestration
+qkash/data.py           Loading, normalization, filtering, feature preparation
+qkash/scoring.py        Weights, losses, Pareto pruning, QUBO construction and verification
+qkash/classical.py      Business-as-usual, exact, and simulated-annealing solvers
+qkash/quantum.py        QAOA, Ising conversion, Aer and qBraid backends
+qkash/benchmark.py      Metric definitions and solver-output validation
+qkash/qbraid_bridge.py  qBraid configuration and secret handling
+tests/test_core.py      Pipeline-order, equivalence, validation, and ranking tests
+```

@@ -1,6 +1,34 @@
-.env
+# Python
 .venv/
-__pycache__/
+venv/
+**/__pycache__/
+*.py[cod]
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# Node and frontend builds
+node_modules/
+dist/
+.vite/
+npm-debug.log*
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Local configuration and OS files
+.env
+.DS_Store
+Thumbs.db
 *.bak
 .~lock*
+
+# Source datasets must never be committed. Obtain them per docs/data_audit.md.
+data/*.csv
+data/raw/
+
+# Tracked project assets kept as exceptions to the rules above.
+!data/QKash.png
