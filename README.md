@@ -9,7 +9,8 @@ quantum advantage, and its experiments are designed to test for one rather than 
 | Document | Contents |
 | --- | --- |
 | [`docs/data_audit.md`](docs/data_audit.md) | What the dataset contains, which fields are read, and every known defect |
-| [`docs/classical_model.md`](docs/classical_model.md) | Objectives, normalization, weights, Pareto pruning, classical solvers |
+| [`docs/classical_model.md`](docs/classical_model.md) | Legacy detailed model notes; current flow is summarized below |
+| [`docs/algorithm_flow.md`](docs/algorithm_flow.md) | Current source/destination/amount, ML policy, QUBO, solver flow |
 | [`docs/qubo_formulation.md`](docs/qubo_formulation.md) | QUBO construction, penalty condition, Ising conversion, verification |
 | [`docs/qaoa_experiment.md`](docs/qaoa_experiment.md) | QAOA algorithm, backends, bit order, metrics, caveats |
 | [`docs/development_plan.md`](docs/development_plan.md) | Staged plan, current status, what is outstanding |
@@ -21,11 +22,12 @@ quantum advantage, and its experiments are designed to test for one rather than 
 has no data and `app.py` will raise `FileNotFoundError` on startup.
 
 QKash reads one audited file — 4,026 rows, 30 columns, deduplicated from the World Bank Remittance
-Prices Worldwide East Africa extract. Obtain it from the project owner, place it at the path below,
-and verify its integrity:
+Prices Worldwide East Africa extract. In this workspace the file is at
+`data/remittance_east_africa_clean.csv`. If a processed export is later placed at
+`data/processed/remittance_east_africa_clean.csv`, the loader will prefer that path automatically.
 
 ```bash
-sha256sum data/processed/remittance_east_africa_clean.csv
+sha256sum data/remittance_east_africa_clean.csv
 # 0b8f69c8c516fa9ea38951c80724f701ff2b16f2064e37ec3cc66c3b243fac90
 ```
 
@@ -54,17 +56,22 @@ pytest
 
 The order is fixed, and filtering before pruning is enforced by test.
 
-1. Load `data/processed/remittance_east_africa_clean.csv`.
-2. Apply corridor, payment-instrument, and pickup-method filters.
-3. Select the amount tier (`cc1` = 200 denomination, `cc2` = 500) and build numeric features.
-4. Convert the priority query into three objective weights — transaction fee, transfer time, FX
-   spread.
-5. Compute normalized weighted scores.
-6. Pareto prune, then backfill to a fixed five-candidate model set.
-7. Build the constrained one-hot model and its equivalent QUBO.
-8. Verify QUBO equivalence. **A failed check aborts the run.**
-9. Compare business as usual, exact enumeration, simulated annealing, and QAOA.
-10. Validate every solver's samples before reporting any metric.
+1. Load the audited remittance CSV once through Streamlit's data cache.
+2. Ask the user only for source country, destination country, and transfer amount.
+3. Match the transfer amount to the closest historical RPW amount tier (`cc1` or `cc2`).
+4. Filter by source and destination, then build amount-specific fee, FX, and time features.
+5. Keep the latest observation for each provider/payment/receiving-method service option.
+6. Compute fee, FX-spread, and settlement-time losses, then Pareto prune before any weighting.
+7. Use K-Means to identify natural service profiles in the Pareto set.
+8. Use a Random Forest classifier trained on those cluster-derived labels to infer the transaction
+   use-case profile.
+9. Convert the inferred profile into internal objective weights; the user is never asked for weights.
+10. Score the remaining candidates, cap the QUBO candidate set for the configured qubit budget, and
+    build the constrained one-service model and equivalent QUBO.
+11. Verify QUBO equivalence. **A failed check aborts the run before QAOA.**
+12. Compare business as usual, exact optimization, lowest-fee/fastest/lowest-FX heuristics,
+    simulated annealing, and QAOA.
+13. Validate every solver's samples before reporting any metric.
 
 Steps 8 and 10 are gates, not diagnostics. Neither can be bypassed from the UI.
 
@@ -72,10 +79,10 @@ Steps 8 and 10 are gates, not diagnostics. Neither can be bypassed from the UI.
 
 Feasibility rate, objective value, relative optimality gap, optimum-hit probability, end-to-end
 runtime, stability, and time to solution. All seven are defined in `qkash/benchmark.py` and computed
-identically for all four solvers.
+identically for all solvers.
 
-The four solvers are not measured on equal footing — two are deterministic single-sample methods,
-two produce distributions. Read
+The solvers are not measured on equal footing: deterministic baselines produce one sample, while
+annealing and QAOA produce distributions. Read
 [Comparison caveats](docs/qaoa_experiment.md#comparison-caveats) before ranking them.
 
 ## qBraid
@@ -104,29 +111,26 @@ final optimized circuit, and only when the qBraid backend is selected.
 These are documented in full in the linked pages, and are summarized here so they are not
 discovered late:
 
-- **No period filter is applied by default**, so a candidate set can mix quarters years apart. See
-  [Limitations](docs/classical_model.md#limitations).
-- **The `Mobile` pickup-method filter option always returns zero rows.** It is generated by
-  tokenizing but matched exactly. Use `Mobile wallet`.
+- **The consumer model recommends one service option.** Exact classical optimization remains a very
+  strong baseline for one-of-N selection, so the research dashboard tests quantum performance rather
+  than assuming quantum advantage.
+- **K-Means and Random Forest labels are pseudo-supervised.** The dataset has service attributes but
+  not explicit consumer use-case labels, so profiles are inferred from cost, FX, time, and channel
+  features.
 - **`receiving network coverage` and `access point` are absent from this export.** The loader creates
   them empty, so `coverage_score` is a constant 0.35 and the coverage column in the candidate table
   renders blank. Neither currently affects a score.
-- **The default priority query is not balanced** — it weights FX spread 49% above the other two
-  objectives. Use the sliders or an explicit `fee=… time=… fx=…` override.
-- **One-of-N selection is classically trivial.** The five-qubit instance validates the
-  implementation; it is not evidence of advantage. Measured across 10 seeds, QAOA reproduces the
-  one-hot constraint but selects among feasible candidates at roughly the uniform rate. See
-  [Reference results](docs/qaoa_experiment.md#reference-results).
 
 ## Layout
 
 ```
-app.py                  Streamlit UI and run orchestration
-qkash/data.py           Loading, normalization, filtering, feature preparation
-qkash/scoring.py        Weights, losses, Pareto pruning, QUBO construction and verification
-qkash/classical.py      Business-as-usual, exact, and simulated-annealing solvers
-qkash/quantum.py        QAOA, Ising conversion, Aer and qBraid backends
-qkash/benchmark.py      Metric definitions and solver-output validation
-qkash/qbraid_bridge.py  qBraid configuration and secret handling
-tests/test_core.py      Pipeline-order, equivalence, validation, and ranking tests
+app.py                   Streamlit consumer UI, research dashboard, and run orchestration
+qkash/data.py            Loading, normalization, corridor filtering, amount matching
+qkash/profiling.py       K-Means service profiles and Random Forest policy inference
+qkash/scoring.py         Objective losses, internal scoring, Pareto pruning, QUBO verification
+qkash/classical.py       BAU, exact, heuristic, and simulated-annealing solvers
+qkash/quantum.py         QAOA, Ising conversion, Aer and qBraid backends
+qkash/benchmark.py       Metric definitions and solver-output validation
+qkash/qbraid_bridge.py   qBraid configuration and secret handling
+tests/test_core.py       Pipeline-order, equivalence, ML policy, validation, and ranking tests
 ```

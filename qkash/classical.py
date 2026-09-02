@@ -60,6 +60,39 @@ def exact_mathematical_baseline(candidates: pd.DataFrame) -> dict[str, object]:
     }
 
 
+def lowest_fee_heuristic(candidates: pd.DataFrame) -> dict[str, object]:
+    """Choose the service with the lowest transaction-fee loss."""
+
+    return _deterministic_heuristic(
+        candidates,
+        algorithm="Lowest-fee heuristic",
+        sort_columns=["transaction_fee_loss", "fx_spread_loss", "time_loss", "weighted_score"],
+        note="Greedy heuristic prioritizing transaction fee before FX spread and time.",
+    )
+
+
+def fastest_transfer_heuristic(candidates: pd.DataFrame) -> dict[str, object]:
+    """Choose the service with the lowest settlement-time loss."""
+
+    return _deterministic_heuristic(
+        candidates,
+        algorithm="Fastest-transfer heuristic",
+        sort_columns=["time_loss", "transaction_fee_loss", "fx_spread_loss", "weighted_score"],
+        note="Greedy heuristic prioritizing settlement time before fee and FX spread.",
+    )
+
+
+def lowest_fx_heuristic(candidates: pd.DataFrame) -> dict[str, object]:
+    """Choose the service with the lowest FX-spread loss."""
+
+    return _deterministic_heuristic(
+        candidates,
+        algorithm="Lowest-FX heuristic",
+        sort_columns=["fx_spread_loss", "transaction_fee_loss", "time_loss", "weighted_score"],
+        note="Greedy heuristic prioritizing FX spread before fee and settlement time.",
+    )
+
+
 def simulated_annealing(
     qubo: QuboModel,
     num_reads: int = 128,
@@ -114,4 +147,31 @@ def simulated_annealing(
         "runtime_s": time.perf_counter() - started,
         "best_energy": best_energy,
         "note": f"{reads} reads, {sweep_count} sweeps per read.",
+    }
+
+
+def _deterministic_heuristic(
+    candidates: pd.DataFrame,
+    algorithm: str,
+    sort_columns: list[str],
+    note: str,
+) -> dict[str, object]:
+    """Return a standard deterministic heuristic result for one selected row."""
+
+    started = time.perf_counter()
+    if candidates.empty:
+        raise ValueError("No candidates supplied")
+
+    available_columns = [column for column in sort_columns if column in candidates.columns]
+    if not available_columns:
+        available_columns = ["weighted_score"]
+    ranked = candidates.sort_values(available_columns, ascending=True, kind="mergesort")
+    index = int(ranked.iloc[0]["candidate_index"])
+    samples = [deterministic_sample(index, candidates["weighted_score"])]
+    return {
+        "algorithm": algorithm,
+        "best_index": index,
+        "samples": samples,
+        "runtime_s": time.perf_counter() - started,
+        "note": note,
     }

@@ -21,8 +21,14 @@ import pandas as pd
 # PROJECT_ROOT is the repository root; it is used to find the default CSV.
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
-# DEFAULT_DATA_PATH is the audited RPW extract used by the app.
-DEFAULT_DATA_PATH = PROJECT_ROOT / "data" / "processed" / "remittance_east_africa_clean.csv"
+# PROCESSED_DATA_PATH is preferred when a separate processed folder is present.
+PROCESSED_DATA_PATH = PROJECT_ROOT / "data" / "processed" / "remittance_east_africa_clean.csv"
+
+# ROOT_DATA_PATH is the audited RPW extract currently present in this project.
+ROOT_DATA_PATH = PROJECT_ROOT / "data" / "remittance_east_africa_clean.csv"
+
+# DEFAULT_DATA_PATH resolves to the available audited RPW extract.
+DEFAULT_DATA_PATH = PROCESSED_DATA_PATH if PROCESSED_DATA_PATH.exists() else ROOT_DATA_PATH
 
 # TEXT_COLUMNS are normalized to clean strings during load.
 TEXT_COLUMNS = (
@@ -54,6 +60,12 @@ REQUIRED_NUMERIC_COLUMNS = (
     "cc2 total cost %",
 )
 
+# AMOUNT_TIERS map the app's amount input to the available RPW fee columns.
+AMOUNT_TIERS = ("cc1", "cc2")
+
+# SERVICE_KEY_COLUMNS define one provider-and-transfer-method candidate.
+SERVICE_KEY_COLUMNS = ("firm", "payment instrument", "pickup method")
+
 # COLUMN_ALIASES allow common underscore/case variants to map into the CSV names.
 COLUMN_ALIASES = {
     "access_point": "access point",
@@ -82,6 +94,16 @@ class FilterSpec:
     payment_instrument: str | None = None
     access_point: str | None = None
     period_range: tuple[str, str] | None = None
+
+
+@dataclass(frozen=True)
+class AmountMatch:
+    """Mapping between a user amount and the closest RPW amount tier."""
+
+    requested_amount: float
+    amount_tier: str
+    matched_denomination: float
+    distance: float
 
 
 def load_dataset(path: str | Path | None = None) -> pd.DataFrame:
@@ -177,6 +199,38 @@ def filter_dataset(df: pd.DataFrame, spec: FilterSpec) -> pd.DataFrame:
     return filtered.reset_index(drop=True)
 
 
+def match_transfer_amount(df: pd.DataFrame, transfer_amount: float) -> AmountMatch:
+    """Choose the RPW amount tier closest to the user-entered transfer amount."""
+
+    amount = float(transfer_amount)
+    if amount <= 0:
+        raise ValueError("transfer_amount must be positive")
+
+    normalized = ensure_supported_columns(df, require_numeric=False)
+    tier_denominations: dict[str, float] = {}
+    for tier in AMOUNT_TIERS:
+        column = f"{tier} denomination amount"
+        if column not in normalized.columns:
+            continue
+        values = pd.to_numeric(normalized[column], errors="coerce").dropna()
+        if not values.empty:
+            tier_denominations[tier] = float(values.median())
+
+    if not tier_denominations:
+        raise ValueError("Dataset does not include supported denomination amounts")
+
+    amount_tier, denomination = min(
+        tier_denominations.items(),
+        key=lambda item: abs(item[1] - amount),
+    )
+    return AmountMatch(
+        requested_amount=amount,
+        amount_tier=amount_tier,
+        matched_denomination=denomination,
+        distance=abs(denomination - amount),
+    )
+
+
 def prepare_candidates(
     df: pd.DataFrame,
     amount_tier: str = "cc1",
@@ -223,6 +277,25 @@ def prepare_candidates(
         )
 
     return prepared.reset_index(drop=True)
+
+
+def latest_service_options(df: pd.DataFrame) -> pd.DataFrame:
+    """Keep the latest observation for each provider/payment/receiving method."""
+
+    prepared = ensure_supported_columns(df, require_numeric=False)
+    if prepared.empty:
+        return prepared.copy()
+
+    return (
+        prepared.sort_values(
+            ["firm", "payment instrument", "pickup method", "period_order", "date_parsed"],
+            ascending=[True, True, True, False, False],
+            kind="mergesort",
+        )
+        .drop_duplicates(list(SERVICE_KEY_COLUMNS), keep="first")
+        .sort_values(["firm", "payment instrument", "pickup method"], kind="mergesort")
+        .reset_index(drop=True)
+    )
 
 
 def ensure_supported_columns(

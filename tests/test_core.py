@@ -9,9 +9,12 @@ from qkash.data import (
     FilterSpec,
     ensure_supported_columns,
     filter_dataset,
+    latest_service_options,
+    match_transfer_amount,
     parse_dates,
     prepare_candidates,
 )
+from qkash.profiling import infer_use_case_policy
 from qkash.quantum import (
     DEFAULT_MAX_QUBITS,
     LocalAerBackend,
@@ -20,6 +23,7 @@ from qkash.quantum import (
     run_qaoa,
 )
 from qkash.scoring import (
+    add_objective_losses,
     build_selection_qubo,
     pareto_prune,
     score_candidates,
@@ -250,10 +254,10 @@ def test_metric_ranking_uses_runtime_as_quality_tie_breaker() -> None:
 
 
 def test_qaoa_default_max_qubits_is_twenty() -> None:
-    assert DEFAULT_MAX_QUBITS == 5
+    assert DEFAULT_MAX_QUBITS == 20
 
 
-def test_qubo_candidate_selection_fills_to_five_after_strict_pareto() -> None:
+def test_qubo_candidate_selection_uses_pareto_frontier_by_default() -> None:
     scored = pd.DataFrame(
         {
             "weighted_score": [0.1, 0.2, 0.3, 0.4, 0.5],
@@ -266,9 +270,65 @@ def test_qubo_candidate_selection_fills_to_five_after_strict_pareto() -> None:
     model_candidates, pruned = select_qubo_candidates(scored, target_size=5)
 
     assert len(pruned) == 1
+    assert len(model_candidates) == 1
+    assert model_candidates["model_source"].tolist().count("Pareto frontier") == 1
+
+
+def test_qubo_candidate_selection_can_fill_for_fixed_qubit_experiments() -> None:
+    scored = pd.DataFrame(
+        {
+            "weighted_score": [0.1, 0.2, 0.3, 0.4, 0.5],
+            "transaction_fee_loss": [0.0, 0.1, 0.2, 0.3, 0.4],
+            "time_loss": [0.0, 0.1, 0.2, 0.3, 0.4],
+            "fx_spread_loss": [0.0, 0.1, 0.2, 0.3, 0.4],
+        }
+    )
+
+    model_candidates, pruned = select_qubo_candidates(
+        scored,
+        target_size=5,
+        allow_fallback=True,
+    )
+
+    assert len(pruned) == 1
     assert len(model_candidates) == 5
     assert model_candidates["model_source"].tolist().count("Pareto frontier") == 1
     assert model_candidates["model_source"].tolist().count("Best scored fallback") == 4
+
+
+def test_transfer_amount_matches_nearest_supported_tier() -> None:
+    match = match_transfer_amount(sample_dataframe(), 450.0)
+
+    assert match.amount_tier == "cc2"
+    assert match.matched_denomination == 500.0
+
+
+def test_latest_service_options_keeps_provider_method_latest_row() -> None:
+    older = sample_dataframe().iloc[[0]].copy()
+    newer = older.copy()
+    newer["date"] = "2025-03-01"
+    newer["period"] = "2025_1Q"
+    newer["date_parsed"] = pd.Timestamp("2025-03-01")
+    newer["period_order"] = 20251
+    frame = pd.concat([older, newer], ignore_index=True)
+
+    latest = latest_service_options(frame)
+
+    assert len(latest) == 1
+    assert latest.iloc[0]["date_parsed"] == pd.Timestamp("2025-03-01")
+
+
+def test_profile_policy_is_inferred_without_user_weights() -> None:
+    prepared = prepare_candidates(
+        filter_dataset(sample_dataframe(), FilterSpec(source_name="Kenya", destination_name="Uganda")),
+        amount_tier="cc1",
+    )
+    losses = add_objective_losses(prepared)
+    profiled, inference = infer_use_case_policy(losses, transfer_amount=200.0, random_state=7)
+
+    assert "service_profile_label" in profiled.columns
+    assert set(inference.weights) == {"transaction_fee", "time", "fx_spread"}
+    assert sum(inference.weights.values()) == pytest.approx(1.0)
 
 
 def test_parse_dates_accepts_both_source_formats() -> None:

@@ -5,7 +5,6 @@ from __future__ import annotations
 # Imports.
 from dataclasses import dataclass
 import itertools
-import re
 from typing import Iterable
 
 import numpy as np
@@ -33,32 +32,6 @@ CANDIDATE_POOL_INDEX_COLUMN = "_candidate_pool_index"
 # MODEL_SOURCE_COLUMN explains why a row entered the final fixed-size QUBO.
 MODEL_SOURCE_COLUMN = "model_source"
 
-# KEYWORDS map plain-language query terms to the three objective weights.
-KEYWORDS: dict[str, tuple[str, ...]] = {
-    "transaction_fee": (
-        "transaction fee",
-        "fee",
-        "fees",
-        "commission",
-        "charge",
-        "charges",
-        "cheap",
-        "cheapest",
-        "affordable",
-    ),
-    "time": ("time", "fast", "faster", "urgent", "instant", "same day", "quick", "speed"),
-    "fx_spread": (
-        "fx spread",
-        "fx",
-        "foreign exchange",
-        "exchange",
-        "spread",
-        "margin",
-        "rate",
-    ),
-}
-
-
 @dataclass(frozen=True)
 class QuboModel:
     """Upper-triangular QUBO matrix for the one-provider selection model."""
@@ -79,40 +52,6 @@ class QuboModel:
         return int(self.scores.size)
 
 
-def parse_weight_query(query: str) -> dict[str, float]:
-    """Turn a plain-language priority query into normalized weights.
-
-    The parser supports keyword intent such as "low fee, fast, low FX spread"
-    and explicit overrides such as ``fee=0.5 time=0.3 fx=0.2``.
-    """
-
-    text = (query or "").lower()
-    if not text.strip():
-        return dict(DEFAULT_WEIGHTS)
-
-    bumps = {name: 0.0 for name in DEFAULT_WEIGHTS}
-    for name, words in KEYWORDS.items():
-        bumps[name] += sum(1.0 for word in words if word in text)
-
-    if any(value > 0 for value in bumps.values()):
-        weights = {name: 0.05 + bumps[name] for name in DEFAULT_WEIGHTS}
-    else:
-        weights = dict(DEFAULT_WEIGHTS)
-
-    aliases = {
-        "transaction_fee": ("transaction_fee", "transaction fee", "fee", "fees"),
-        "time": ("time", "speed"),
-        "fx_spread": ("fx_spread", "fx spread", "fx", "spread"),
-    }
-    for name, names in aliases.items():
-        alias_pattern = "|".join(re.escape(alias) for alias in names)
-        match = re.search(rf"\b(?:{alias_pattern})\s*[:=]\s*(\d+(?:\.\d+)?)", text)
-        if match:
-            weights[name] = float(match.group(1))
-
-    return normalize_weights(weights)
-
-
 def normalize_weights(weights: dict[str, float]) -> dict[str, float]:
     """Keep known weight names, clamp negatives, and normalize to one."""
 
@@ -121,6 +60,19 @@ def normalize_weights(weights: dict[str, float]) -> dict[str, float]:
     if total <= 0:
         return dict(DEFAULT_WEIGHTS)
     return {name: value / total for name, value in cleaned.items()}
+
+
+def add_objective_losses(candidates: pd.DataFrame) -> pd.DataFrame:
+    """Add normalized fee, time, and FX loss columns without applying weights."""
+
+    if candidates.empty:
+        return candidates.copy()
+
+    scored = candidates.copy()
+    scored["transaction_fee_loss"] = _minmax_loss(scored["fee_lcu"])
+    scored["time_loss"] = 1.0 - scored["speed_score"].clip(0, 1)
+    scored["fx_spread_loss"] = _minmax_loss(scored["fx_margin"])
+    return scored
 
 
 def score_candidates(candidates: pd.DataFrame, weights: dict[str, float]) -> pd.DataFrame:
@@ -134,10 +86,7 @@ def score_candidates(candidates: pd.DataFrame, weights: dict[str, float]) -> pd.
         return candidates.copy()
 
     normalized = normalize_weights(weights)
-    scored = candidates.copy()
-    scored["transaction_fee_loss"] = _minmax_loss(scored["fee_lcu"])
-    scored["time_loss"] = 1.0 - scored["speed_score"].clip(0, 1)
-    scored["fx_spread_loss"] = _minmax_loss(scored["fx_margin"])
+    scored = add_objective_losses(candidates)
 
     scored["weighted_score"] = (
         normalized["transaction_fee"] * scored["transaction_fee_loss"]
@@ -168,9 +117,10 @@ def pareto_prune(
         strictly_better = np.any(points < point - tolerance, axis=1)
         dominated[i] = bool(np.any(no_worse & strictly_better))
 
+    sort_columns = ["weighted_score"] if "weighted_score" in candidates.columns else list(columns)
     return (
         candidates.loc[~dominated]
-        .sort_values("weighted_score", kind="mergesort")
+        .sort_values(sort_columns, kind="mergesort")
         .reset_index(drop=True)
     )
 
@@ -179,13 +129,13 @@ def select_qubo_candidates(
     scored: pd.DataFrame,
     target_size: int,
     columns: tuple[str, ...] = LOSS_COLUMNS,
+    allow_fallback: bool = False,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Build a fixed-size QUBO candidate set from scored and Pareto rows.
 
-    Strict Pareto pruning can sometimes leave fewer rows than the requested
-    qubit count.  In that case, the missing slots are filled with the next-best
-    scored candidates from the already-filtered dataset, so every qubit still
-    represents a real candidate row.
+    By default only Pareto-surviving services are eligible for the QUBO.  The
+    optional fallback mode is kept for experiments that need a fixed qubit count
+    even when strict Pareto pruning leaves a smaller frontier.
     """
 
     requested = int(target_size)
@@ -205,7 +155,7 @@ def select_qubo_candidates(
     frontier[MODEL_SOURCE_COLUMN] = "Pareto frontier"
 
     remaining = requested - len(frontier)
-    if remaining > 0:
+    if allow_fallback and remaining > 0:
         used_pool_indices = set(frontier[CANDIDATE_POOL_INDEX_COLUMN].astype(int).tolist())
         fallback = pool.loc[
             ~pool[CANDIDATE_POOL_INDEX_COLUMN].isin(used_pool_indices)

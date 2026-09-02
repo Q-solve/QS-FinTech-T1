@@ -30,8 +30,8 @@ DEFAULT_QAOA_REPS = 1
 # DEFAULT_SHOTS controls how many bitstrings are sampled from the final circuit.
 DEFAULT_SHOTS = 512
 
-# DEFAULT_MAX_QUBITS fixes the standalone QAOA safety cap to QKash's target size.
-DEFAULT_MAX_QUBITS = 5
+# DEFAULT_MAX_QUBITS caps the QAOA search space for local simulation and qBraid.
+DEFAULT_MAX_QUBITS = 20
 
 
 @dataclass(frozen=True)
