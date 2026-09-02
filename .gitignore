@@ -1,0 +1,21 @@
+# Python
+.venv/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# Node and frontend builds
+node_modules/
+dist/
+
+# Local configuration and OS files
+.DS_Store
+.env
+
+# Raw source data must never be committed
+data/raw/*.xlsx
+frontend/data/raw/
