@@ -18,13 +18,18 @@ from .scoring import DEFAULT_ENCODING, decode_bits, encode_index, required_qubit
 EPSILON = 1e-12
 
 # METRIC_RANKING_RULE orders solvers by quality first and execution cost second.
+#
+# Cost is ranked on the compute clock rather than wall clock. A queued remote
+# device would otherwise be ranked on how busy the provider was, not on how the
+# algorithm performed. end_to_end_runtime_s stays in the table as the honest
+# total cost of using the backend, but it does not decide the ordering.
 METRIC_RANKING_RULE = (
     ("relative_optimality_gap", True),
     ("objective_value", True),
     ("optimum_hit_probability", False),
     ("feasibility_rate", False),
-    ("time_to_solution_s", True),
-    ("end_to_end_runtime_s", True),
+    ("compute_time_to_solution_s", True),
+    ("compute_runtime_s", True),
     ("stability", False),
 )
 
@@ -77,6 +82,7 @@ def summarize_samples(
     runtime_s: float,
     confidence: float = 0.99,
     device_runtime_s: float | None = None,
+    compute_runtime_s: float | None = None,
 ) -> dict[str, object]:
     """Compute the core metrics requested for every optimizer."""
 
@@ -88,10 +94,13 @@ def summarize_samples(
             "relative_optimality_gap": np.nan,
             "optimum_hit_probability": 0.0,
             "end_to_end_runtime_s": runtime_s,
+            "compute_runtime_s": (
+                float(compute_runtime_s) if compute_runtime_s is not None else float(runtime_s)
+            ),
             "device_runtime_s": device_runtime_s if device_runtime_s is not None else np.nan,
             "stability": 0.0,
             "time_to_solution_s": np.inf,
-            "device_time_to_solution_s": np.inf,
+            "compute_time_to_solution_s": np.inf,
             "runs": 0,
         }
 
@@ -119,6 +128,9 @@ def summarize_samples(
         modal_share = Counter(selected_indices).most_common(1)[0][1] / len(selected_indices)
 
     hit_probability = len(hits) / len(samples)
+    compute_seconds = (
+        float(compute_runtime_s) if compute_runtime_s is not None else float(runtime_s)
+    )
     return {
         "algorithm": algorithm,
         "feasibility_rate": len(feasible) / len(samples),
@@ -126,18 +138,21 @@ def summarize_samples(
         "relative_optimality_gap": max(float(gap), 0.0) if not np.isnan(gap) else np.nan,
         "optimum_hit_probability": hit_probability,
         "end_to_end_runtime_s": float(runtime_s),
-        # device_runtime_s excludes queue, network, and the local optimization
-        # loop. Comparing a queued remote device to a local simulator on
-        # end_to_end_runtime_s measures the queue, not the hardware.
+        # compute_runtime_s is the work the algorithm actually did: local
+        # optimization plus circuit execution, with submission, network, and queue
+        # waiting removed. It is defined for every solver, so it is the only clock
+        # on which a queued remote backend and a local one compare fairly.
+        # Classical solvers do no remote work, so it equals their wall clock.
+        "compute_runtime_s": compute_seconds,
+        # device_runtime_s narrows further to circuit execution on the quantum
+        # device, and is NaN for solvers that never touch one.
         "device_runtime_s": (
             float(device_runtime_s) if device_runtime_s is not None else np.nan
         ),
         "stability": float(modal_share),
         "time_to_solution_s": time_to_solution(runtime_s, len(samples), hit_probability, confidence),
-        "device_time_to_solution_s": (
-            time_to_solution(float(device_runtime_s), len(samples), hit_probability, confidence)
-            if device_runtime_s is not None
-            else np.nan
+        "compute_time_to_solution_s": time_to_solution(
+            compute_seconds, len(samples), hit_probability, confidence
         ),
         "runs": len(samples),
     }
@@ -170,13 +185,23 @@ def metrics_frame(metrics: list[dict[str, object]]) -> pd.DataFrame:
         "relative_optimality_gap",
         "optimum_hit_probability",
         "end_to_end_runtime_s",
+        "compute_runtime_s",
         "device_runtime_s",
         "stability",
         "time_to_solution_s",
-        "device_time_to_solution_s",
+        "compute_time_to_solution_s",
         "runs",
     ]
     return pd.DataFrame(metrics, columns=columns)
+
+
+# METRIC_RANKING_FALLBACKS map a preferred ranking column to the wall-clock column
+# to use when the preferred one is absent. Filling a missing cost column with NaN
+# would tie every solver and silently leave the ordering to input order.
+METRIC_RANKING_FALLBACKS = {
+    "compute_time_to_solution_s": "time_to_solution_s",
+    "compute_runtime_s": "end_to_end_runtime_s",
+}
 
 
 def rank_metrics(metrics: pd.DataFrame) -> pd.DataFrame:
@@ -187,8 +212,14 @@ def rank_metrics(metrics: pd.DataFrame) -> pd.DataFrame:
 
     ranked = metrics.copy()
     for column, _ascending in METRIC_RANKING_RULE:
+        fallback = METRIC_RANKING_FALLBACKS.get(column)
         if column not in ranked.columns:
-            ranked[column] = np.nan
+            if fallback and fallback in ranked.columns:
+                ranked[column] = ranked[fallback]
+            else:
+                ranked[column] = np.nan
+        elif fallback and fallback in ranked.columns:
+            ranked[column] = ranked[column].fillna(ranked[fallback])
 
     return ranked.sort_values(
         by=[column for column, _ascending in METRIC_RANKING_RULE],

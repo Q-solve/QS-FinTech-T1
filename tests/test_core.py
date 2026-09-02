@@ -287,6 +287,63 @@ def test_metric_ranking_uses_runtime_as_quality_tie_breaker() -> None:
     assert rank_metrics(metrics).iloc[0]["algorithm"] == "Exact mathematical baseline"
 
 
+def test_metric_ranking_prefers_compute_time_over_wall_clock() -> None:
+    """A queued remote backend must not be ranked on how busy the provider was."""
+
+    metrics = pd.DataFrame(
+        [
+            {
+                "algorithm": "Simulated annealing",
+                "feasibility_rate": 1.0,
+                "objective_value": 0.05,
+                "relative_optimality_gap": 0.0,
+                "optimum_hit_probability": 0.5,
+                "end_to_end_runtime_s": 1.0,
+                "compute_runtime_s": 1.0,
+                "stability": 1.0,
+                "time_to_solution_s": 1.0,
+                "compute_time_to_solution_s": 1.0,
+                "runs": 100,
+            },
+            {
+                # Same quality, but 90 s of it was queue waiting.
+                "algorithm": "QAOA",
+                "feasibility_rate": 1.0,
+                "objective_value": 0.05,
+                "relative_optimality_gap": 0.0,
+                "optimum_hit_probability": 0.5,
+                "end_to_end_runtime_s": 90.5,
+                "compute_runtime_s": 0.5,
+                "stability": 1.0,
+                "time_to_solution_s": 90.5,
+                "compute_time_to_solution_s": 0.5,
+                "runs": 100,
+            },
+        ]
+    )
+
+    assert rank_metrics(metrics).iloc[0]["algorithm"] == "QAOA"
+
+
+def test_metric_ranking_falls_back_when_compute_columns_are_absent() -> None:
+    """Older metric frames without the compute clock must still order correctly."""
+
+    metrics = pd.DataFrame(
+        [
+            {"algorithm": "slow", "feasibility_rate": 1.0, "objective_value": 0.0,
+             "relative_optimality_gap": 0.0, "optimum_hit_probability": 1.0,
+             "end_to_end_runtime_s": 5.0, "stability": 1.0,
+             "time_to_solution_s": 5.0, "runs": 1},
+            {"algorithm": "fast", "feasibility_rate": 1.0, "objective_value": 0.0,
+             "relative_optimality_gap": 0.0, "optimum_hit_probability": 1.0,
+             "end_to_end_runtime_s": 0.1, "stability": 1.0,
+             "time_to_solution_s": 0.1, "runs": 1},
+        ]
+    )
+
+    assert rank_metrics(metrics).iloc[0]["algorithm"] == "fast"
+
+
 def test_qaoa_default_max_qubits_is_twenty() -> None:
     assert DEFAULT_MAX_QUBITS == 20
 

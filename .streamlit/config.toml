@@ -2,6 +2,16 @@
 port = 8503
 headless = true
 
+# Qiskit's Rust extension (qiskit/_accelerate.abi3.so) segfaults when a module
+# that imports it is evicted from sys.modules and re-imported, and qiskit work
+# then runs on a fresh ScriptRunner thread. Streamlit's LocalSourcesWatcher does
+# exactly that in flush_pending_evictions() at the start of each script run.
+#
+# On WSL the poll-based watcher sees spurious mtime changes on drvfs, so the
+# eviction fires without anyone editing a file. Disabling the watcher removes the
+# trigger. Cost: edits to app.py/qkash/*.py need a manual server restart.
+fileWatcherType = "none"
+
 [browser]
 serverAddress = "localhost"
 serverPort = 8503

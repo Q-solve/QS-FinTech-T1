@@ -448,6 +448,7 @@ def render_metric_charts(metrics: pd.DataFrame) -> None:
         "relative_optimality_gap",
         "optimum_hit_probability",
         "end_to_end_runtime_s",
+        "compute_runtime_s",
         "device_runtime_s",
         "stability",
         "time_to_solution_s",
@@ -459,6 +460,7 @@ def render_metric_charts(metrics: pd.DataFrame) -> None:
             "Gap",
             "Optimum Hit",
             "Runtime",
+            "Compute Runtime",
             "Device Runtime",
             "Stability",
             "Time To Solution",
@@ -531,10 +533,11 @@ def render_research_dashboard(
 
     st.subheader("Core Metrics")
     st.caption(
-        "end_to_end_runtime_s is total wall clock: the local optimization loop plus, "
-        "for a remote backend, submission, network, and queue waiting. "
-        "device_runtime_s is on-machine execution only, and is the fair basis for "
-        "comparing a queued remote device against a local simulator."
+        "end_to_end_runtime_s is total wall clock, including submission, network, and "
+        "queue waiting for a remote backend. compute_runtime_s removes that overhead "
+        "and is the clock solvers are ranked on, so a busy provider queue cannot "
+        "change the ordering. device_runtime_s narrows further to circuit execution "
+        "on the quantum device, and is blank for solvers that never use one."
     )
     st.dataframe(
         metrics.style.format(
@@ -544,10 +547,11 @@ def render_research_dashboard(
                 "relative_optimality_gap": "{:.2%}",
                 "optimum_hit_probability": "{:.2%}",
                 "end_to_end_runtime_s": "{:.4f}",
+                "compute_runtime_s": "{:.4f}",
                 "device_runtime_s": "{:.4f}",
                 "stability": "{:.2%}",
                 "time_to_solution_s": "{:.4f}",
-                "device_time_to_solution_s": "{:.4f}",
+                "compute_time_to_solution_s": "{:.4f}",
             }
         ),
         width="stretch",
@@ -974,6 +978,7 @@ def main() -> None:
                 exact["indices"],
                 float(result.get("runtime_s", 0.0)),
                 device_runtime_s=result.get("device_runtime_s"),
+                compute_runtime_s=result.get("compute_runtime_s"),
             )
             for result in results
         ]

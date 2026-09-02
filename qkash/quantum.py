@@ -273,6 +273,7 @@ def run_qaoa(
         }
 
     samples = _samples_from_counts(combined_counts, qubo)
+    optimizer_runtime_s = max(time.perf_counter() - started - backend_runtime_s, 0.0)
     return {
         "algorithm": "QAOA",
         "status": "ok",
@@ -285,7 +286,15 @@ def run_qaoa(
         # simulator. end_to_end_runtime_s remains the honest total cost.
         "device_runtime_s": device_runtime_s if device_time_reported else None,
         "device_time_source": "; ".join(device_time_sources) or "not reported",
-        "optimizer_runtime_s": max(time.perf_counter() - started - backend_runtime_s, 0.0),
+        "optimizer_runtime_s": optimizer_runtime_s,
+        # compute_runtime_s drops submission, network, and queue waiting. When the
+        # backend reports on-machine time we use it; otherwise the backend call is
+        # all local anyway and its wall clock is already compute time.
+        "compute_runtime_s": (
+            optimizer_runtime_s + device_runtime_s
+            if device_time_reported
+            else optimizer_runtime_s + backend_runtime_s
+        ),
         "best_energy_expectation": expectation,
         "parameters": params.tolist(),
         "optimization_backend": local_optimizer_backend.name,
