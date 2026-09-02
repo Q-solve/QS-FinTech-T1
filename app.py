@@ -70,7 +70,12 @@ APP_ROOT = Path(__file__).resolve().parent
 LOGO_PATH = APP_ROOT / "data" / "QKash.png"
 
 # MODEL_CANDIDATE_CAP limits the QUBO size for local QAOA simulation.
-MODEL_CANDIDATE_CAP = DEFAULT_MAX_QUBITS
+#
+# The one-hot encoding uses one qubit per candidate, so this is a qubit budget.
+# The local optimizer evaluates the exact statevector expectation once per COBYLA
+# iteration; measured cost grows roughly 4x per added qubit (12 qubits ~16s for a
+# full optimization, 14 ~58s, 16 ~255s), so 12 keeps an interactive run responsive.
+MODEL_CANDIDATE_CAP = min(12, DEFAULT_MAX_QUBITS)
 
 # LOCAL_AER_DEVICE_ID names the local simulator shown in the UI.
 LOCAL_AER_DEVICE_ID = "local-aer-simulator"
@@ -443,6 +448,7 @@ def render_metric_charts(metrics: pd.DataFrame) -> None:
         "relative_optimality_gap",
         "optimum_hit_probability",
         "end_to_end_runtime_s",
+        "device_runtime_s",
         "stability",
         "time_to_solution_s",
     ]
@@ -453,6 +459,7 @@ def render_metric_charts(metrics: pd.DataFrame) -> None:
             "Gap",
             "Optimum Hit",
             "Runtime",
+            "Device Runtime",
             "Stability",
             "Time To Solution",
         ]
@@ -523,6 +530,12 @@ def render_research_dashboard(
             st.json(batch_report)
 
     st.subheader("Core Metrics")
+    st.caption(
+        "end_to_end_runtime_s is total wall clock: the local optimization loop plus, "
+        "for a remote backend, submission, network, and queue waiting. "
+        "device_runtime_s is on-machine execution only, and is the fair basis for "
+        "comparing a queued remote device against a local simulator."
+    )
     st.dataframe(
         metrics.style.format(
             {
@@ -531,8 +544,10 @@ def render_research_dashboard(
                 "relative_optimality_gap": "{:.2%}",
                 "optimum_hit_probability": "{:.2%}",
                 "end_to_end_runtime_s": "{:.4f}",
+                "device_runtime_s": "{:.4f}",
                 "stability": "{:.2%}",
                 "time_to_solution_s": "{:.4f}",
+                "device_time_to_solution_s": "{:.4f}",
             }
         ),
         width="stretch",
@@ -674,7 +689,8 @@ def main() -> None:
         with st.expander("Research settings"):
             st.caption(
                 f"QUBO candidate cap: {MODEL_CANDIDATE_CAP}. "
-                "QAOA qubits use compact binary indexing: ceil(log2(candidate rows))."
+                "QAOA uses one-hot encoding: one qubit per candidate row, which keeps "
+                "the objective exactly representable as a quadratic form."
             )
             st.markdown("Policy constraints")
             max_total_cost_pct = st.number_input(
@@ -822,11 +838,18 @@ def main() -> None:
     service_model_candidates, _ = select_qubo_candidates(scored, MODEL_CANDIDATE_CAP)
     model_candidates, batch_report = build_batch_plans(service_model_candidates, batch_settings)
     model_candidates["candidate_index"] = np.arange(len(model_candidates), dtype=int)
+    if len(model_candidates) > MODEL_CANDIDATE_CAP:
+        model_candidates = (
+            model_candidates.sort_values("weighted_score", kind="mergesort")
+            .head(MODEL_CANDIDATE_CAP)
+            .reset_index(drop=True)
+        )
+        model_candidates["candidate_index"] = np.arange(len(model_candidates), dtype=int)
     qubit_count = required_qubits(len(model_candidates)) if not model_candidates.empty else 0
     basis_state_count = 2**qubit_count if qubit_count else 0
     if qubit_count:
         model_candidates["binary_state"] = [
-            format(int(index), f"0{qubit_count}b")
+            "".join("1" if position == int(index) else "0" for position in range(qubit_count))
             for index in model_candidates["candidate_index"]
         ]
 
@@ -849,8 +872,11 @@ def main() -> None:
         return
 
     st.caption(
-        f"Compact QUBO encoding: {len(model_candidates):,} candidates use "
-        f"{qubit_count:,} qubits, giving {basis_state_count:,} possible basis states."
+        f"One-hot QUBO encoding: {len(model_candidates):,} candidates use "
+        f"{qubit_count:,} qubits, giving {basis_state_count:,} basis states of which "
+        f"{len(model_candidates):,} are feasible. One-hot keeps the objective exactly "
+        f"representable as a quadratic form, so every candidate score enters the "
+        f"Hamiltonian."
     )
     run_status.write("Building the QUBO and validating it against the constrained model.")
     scores = model_candidates["weighted_score"].to_numpy(dtype=float)
@@ -947,6 +973,7 @@ def main() -> None:
                 float(exact["objective"]),
                 exact["indices"],
                 float(result.get("runtime_s", 0.0)),
+                device_runtime_s=result.get("device_runtime_s"),
             )
             for result in results
         ]

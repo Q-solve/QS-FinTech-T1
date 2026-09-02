@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import itertools
+
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -26,6 +29,8 @@ from qkash.quantum import (
     run_qaoa,
 )
 from qkash.scoring import (
+    ENCODING_BINARY_INDEX,
+    ENCODING_ONE_HOT,
     add_objective_losses,
     build_selection_qubo,
     pareto_prune,
@@ -193,9 +198,9 @@ def test_qaoa_returns_circuit_diagram() -> None:
     assert result["status"] == "ok"
     assert result["optimization_backend"] == "LocalAerBackend"
     assert result["execution_backend"] == "LocalAerBackend"
-    assert result["circuit_num_qubits"] == 1
+    assert result["circuit_num_qubits"] == 2
     assert result["candidate_count"] == 2
-    assert result["basis_state_count"] == 2
+    assert result["basis_state_count"] == 4
     assert result["circuit_depth"] > 0
     assert len(result["samples"]) == 8
     assert "circuit_diagram" in result
@@ -286,17 +291,65 @@ def test_qaoa_default_max_qubits_is_twenty() -> None:
     assert DEFAULT_MAX_QUBITS == 20
 
 
-def test_nine_candidates_use_four_binary_index_qubits() -> None:
+def test_nine_candidates_use_nine_one_hot_qubits() -> None:
     qubo = build_selection_qubo([0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1])
     verification = verify_qubo_equivalence(qubo)
 
-    assert required_qubits(9) == 4
-    assert qubo.size == 4
+    assert required_qubits(9) == 9
+    assert qubo.encoding == ENCODING_ONE_HOT
+    assert qubo.size == 9
     assert qubo.candidate_count == 9
-    assert qubo.state_count == 16
-    assert qubo.invalid_state_count == 7
+    assert qubo.state_count == 512
     assert verification["equivalent"] is True
     assert verification["qubo_indices"] == [8]
+
+
+def test_qubo_encodes_every_candidate_score_not_just_the_optimum() -> None:
+    """Regression: the QUBO must not be built around a precomputed answer.
+
+    Two score vectors sharing an argmin but differing elsewhere must produce
+    different Hamiltonians. A construction that plants the classical optimum
+    yields identical matrices here, which makes any solver comparison circular.
+    """
+
+    shared_argmin = build_selection_qubo([0.10, 0.50, 0.90, 0.95], penalty=2.0)
+    different_tail = build_selection_qubo([0.10, 0.11, 0.12, 0.13], penalty=2.0)
+
+    assert not np.array_equal(shared_argmin.matrix, different_tail.matrix)
+    assert np.allclose(np.diag(shared_argmin.matrix), np.array([0.10, 0.50, 0.90, 0.95]) - 2.0)
+
+
+def test_qubo_energy_ordering_matches_score_ordering() -> None:
+    """Feasible-state energies must rank candidates the way their scores do."""
+
+    scores = [0.01, 0.02, 0.03, 0.04, 0.90, 0.91, 0.92, 0.93]
+    qubo = build_selection_qubo(scores, penalty=2.0)
+
+    ranked = sorted(
+        (qubo.energy(bits), index)
+        for bits, index in (
+            (b, qubo.decode_index(b)) for b in itertools.product((0, 1), repeat=qubo.size)
+        )
+        if index is not None
+    )
+
+    assert [index for _energy, index in ranked] == list(np.argsort(scores))
+
+
+def test_qubo_verification_fails_when_penalty_is_too_small() -> None:
+    """The equivalence check must be falsifiable, not a tautology."""
+
+    assert verify_qubo_equivalence(build_selection_qubo([0.5, 0.9], penalty=2.0))["equivalent"]
+    assert not verify_qubo_equivalence(
+        build_selection_qubo([0.5, 0.9], penalty=0.4)
+    )["equivalent"]
+
+
+def test_binary_index_encoding_is_rejected() -> None:
+    """A quadratic form cannot represent an arbitrary score vector over index bits."""
+
+    with pytest.raises(NotImplementedError):
+        build_selection_qubo([0.1, 0.2, 0.3], penalty=2.0, encoding=ENCODING_BINARY_INDEX)
 
 
 def test_qubo_candidate_selection_uses_pareto_frontier_by_default() -> None:
@@ -516,3 +569,57 @@ def test_mixed_date_formats_leave_no_unparsed_rows() -> None:
     parsed = parse_dates(pd.Series(["24/Jan/2011", "2025-09-03"] * 10))
 
     assert parsed.notna().all()
+
+
+def test_qbraid_device_runtime_prefers_reported_execution_duration() -> None:
+    """qBraid reports on-machine milliseconds; queue time must not leak into it."""
+
+    from datetime import datetime, timedelta
+
+    from qkash.quantum import _extract_qbraid_device_runtime
+
+    class Stamps:
+        createdAt = datetime(2026, 1, 1, 0, 0, 0)
+        endedAt = datetime(2026, 1, 1, 0, 0, 30)   # 30 s wall clock incl. queue
+        executionDuration = 250                     # 250 ms actually on the machine
+
+    class Result:
+        details = {"time_stamps": Stamps()}
+
+    seconds, source = _extract_qbraid_device_runtime(Result())
+
+    assert seconds == 0.25
+    assert source == "qBraid executionDuration"
+
+
+def test_qbraid_device_runtime_flags_queue_inclusive_fallback() -> None:
+    """When the device reports nothing, the schema derives endedAt - createdAt."""
+
+    from datetime import datetime
+
+    from qkash.quantum import _extract_qbraid_device_runtime
+
+    class Stamps:
+        createdAt = datetime(2026, 1, 1, 0, 0, 0)
+        endedAt = datetime(2026, 1, 1, 0, 0, 30)
+        executionDuration = 30_000                  # exactly the wall-clock span
+
+    class Result:
+        details = {"time_stamps": Stamps()}
+
+    seconds, source = _extract_qbraid_device_runtime(Result())
+
+    assert seconds == 30.0
+    assert "includes queue" in source
+
+
+def test_qbraid_device_runtime_absent_is_reported_as_missing() -> None:
+    class Result:
+        details: dict[str, object] = {}
+
+    from qkash.quantum import _extract_qbraid_device_runtime
+
+    seconds, source = _extract_qbraid_device_runtime(Result())
+
+    assert seconds is None
+    assert source == "not reported by device"

@@ -3,5 +3,5 @@ port = 8503
 headless = true
 
 [browser]
-serverAddress = "qkash"
+serverAddress = "localhost"
 serverPort = 8503

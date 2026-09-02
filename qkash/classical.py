@@ -10,10 +10,13 @@ import numpy as np
 import pandas as pd
 
 from .benchmark import deterministic_sample, sample_from_bits
-from .scoring import QuboModel, solve_original_exact
+from .scoring import DEFAULT_ENCODING, QuboModel, solve_original_exact
 
 
-def business_as_usual_baseline(candidates: pd.DataFrame) -> dict[str, object]:
+def business_as_usual_baseline(
+    candidates: pd.DataFrame,
+    encoding: str = DEFAULT_ENCODING,
+) -> dict[str, object]:
     """Select the most commonly observed firm after filtering.
 
     This is the non-optimization baseline: it represents continuing with the
@@ -34,7 +37,7 @@ def business_as_usual_baseline(candidates: pd.DataFrame) -> dict[str, object]:
         kind="mergesort",
     )
     index = int(ranked.iloc[0]["candidate_index"])
-    samples = [deterministic_sample(index, candidates["weighted_score"])]
+    samples = [deterministic_sample(index, candidates["weighted_score"], encoding)]
     return {
         "algorithm": "Business as usual",
         "best_index": index,
@@ -44,13 +47,16 @@ def business_as_usual_baseline(candidates: pd.DataFrame) -> dict[str, object]:
     }
 
 
-def exact_mathematical_baseline(candidates: pd.DataFrame) -> dict[str, object]:
+def exact_mathematical_baseline(
+    candidates: pd.DataFrame,
+    encoding: str = DEFAULT_ENCODING,
+) -> dict[str, object]:
     """Solve the original constrained one-hot model exactly."""
 
     started = time.perf_counter()
     exact = solve_original_exact(candidates["weighted_score"])
     index = int(exact["index"])
-    samples = [deterministic_sample(index, candidates["weighted_score"])]
+    samples = [deterministic_sample(index, candidates["weighted_score"], encoding)]
     return {
         "algorithm": "Exact mathematical baseline",
         "best_index": index,
@@ -60,33 +66,45 @@ def exact_mathematical_baseline(candidates: pd.DataFrame) -> dict[str, object]:
     }
 
 
-def lowest_fee_heuristic(candidates: pd.DataFrame) -> dict[str, object]:
+def lowest_fee_heuristic(
+    candidates: pd.DataFrame,
+    encoding: str = DEFAULT_ENCODING,
+) -> dict[str, object]:
     """Choose the service with the lowest transaction-fee loss."""
 
     return _deterministic_heuristic(
         candidates,
+        encoding=encoding,
         algorithm="Lowest-fee heuristic",
         sort_columns=["transaction_fee_loss", "fx_spread_loss", "time_loss", "weighted_score"],
         note="Greedy heuristic prioritizing transaction fee before FX spread and time.",
     )
 
 
-def fastest_transfer_heuristic(candidates: pd.DataFrame) -> dict[str, object]:
+def fastest_transfer_heuristic(
+    candidates: pd.DataFrame,
+    encoding: str = DEFAULT_ENCODING,
+) -> dict[str, object]:
     """Choose the service with the lowest settlement-time loss."""
 
     return _deterministic_heuristic(
         candidates,
+        encoding=encoding,
         algorithm="Fastest-transfer heuristic",
         sort_columns=["time_loss", "transaction_fee_loss", "fx_spread_loss", "weighted_score"],
         note="Greedy heuristic prioritizing settlement time before fee and FX spread.",
     )
 
 
-def lowest_fx_heuristic(candidates: pd.DataFrame) -> dict[str, object]:
+def lowest_fx_heuristic(
+    candidates: pd.DataFrame,
+    encoding: str = DEFAULT_ENCODING,
+) -> dict[str, object]:
     """Choose the service with the lowest FX-spread loss."""
 
     return _deterministic_heuristic(
         candidates,
+        encoding=encoding,
         algorithm="Lowest-FX heuristic",
         sort_columns=["fx_spread_loss", "transaction_fee_loss", "time_loss", "weighted_score"],
         note="Greedy heuristic prioritizing FX spread before fee and settlement time.",
@@ -132,14 +150,14 @@ def simulated_annealing(
                 bits = proposal
                 energy = proposal_energy
 
-        sample = sample_from_bits(bits, qubo.scores)
+        sample = sample_from_bits(bits, qubo.scores, qubo.encoding)
         sample["energy"] = float(energy)
         samples.append(sample)
         if energy < best_energy:
             best_energy = float(energy)
             best_bits = bits.astype(int).tolist()
 
-    best_sample = sample_from_bits(best_bits or [0] * size, qubo.scores)
+    best_sample = sample_from_bits(best_bits or [0] * size, qubo.scores, qubo.encoding)
     return {
         "algorithm": "Simulated annealing",
         "best_index": best_sample["index"],
@@ -152,6 +170,7 @@ def simulated_annealing(
 
 def _deterministic_heuristic(
     candidates: pd.DataFrame,
+    encoding: str,
     algorithm: str,
     sort_columns: list[str],
     note: str,
@@ -167,7 +186,7 @@ def _deterministic_heuristic(
         available_columns = ["weighted_score"]
     ranked = candidates.sort_values(available_columns, ascending=True, kind="mergesort")
     index = int(ranked.iloc[0]["candidate_index"])
-    samples = [deterministic_sample(index, candidates["weighted_score"])]
+    samples = [deterministic_sample(index, candidates["weighted_score"], encoding)]
     return {
         "algorithm": algorithm,
         "best_index": index,

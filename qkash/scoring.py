@@ -36,9 +36,18 @@ CANDIDATE_POOL_INDEX_COLUMN = "_candidate_pool_index"
 # MODEL_SOURCE_COLUMN explains why a row entered the final fixed-size QUBO.
 MODEL_SOURCE_COLUMN = "model_source"
 
+# ENCODING_ONE_HOT assigns one qubit per candidate and represents the objective exactly.
+ENCODING_ONE_HOT = "one-hot"
+
+# ENCODING_BINARY_INDEX encodes the candidate row number in binary. See build_selection_qubo.
+ENCODING_BINARY_INDEX = "binary-index"
+
+# DEFAULT_ENCODING is one-hot because it is the only encoding that keeps the objective quadratic.
+DEFAULT_ENCODING = ENCODING_ONE_HOT
+
 @dataclass(frozen=True)
 class QuboModel:
-    """Upper-triangular QUBO matrix for compact binary-index service selection."""
+    """Upper-triangular QUBO matrix for one-hot service selection."""
 
     matrix: np.ndarray
     offset: float
@@ -46,8 +55,9 @@ class QuboModel:
     scores: np.ndarray
     labels: tuple[str, ...] = ()
     candidate_labels: tuple[str, ...] = ()
+    # optimal_index is retained for reporting only and must never inform construction.
     optimal_index: int | None = None
-    encoding: str = "binary-index"
+    encoding: str = DEFAULT_ENCODING
 
     def energy(self, bits: Iterable[int]) -> float:
         vector = np.asarray(list(bits), dtype=float)
@@ -75,7 +85,7 @@ class QuboModel:
     def decode_index(self, bits: Iterable[int]) -> int | None:
         """Decode a measured bitstring into a candidate row index."""
 
-        return decode_candidate_index(bits, self.candidate_count)
+        return decode_bits(bits, self.candidate_count, self.encoding)
 
 
 def normalize_weights(weights: dict[str, float]) -> dict[str, float]:
@@ -242,16 +252,46 @@ def build_selection_qubo(
     scores: Iterable[float],
     penalty: float | None = None,
     labels: Iterable[str] | None = None,
+    encoding: str = DEFAULT_ENCODING,
 ) -> QuboModel:
-    """Build a compact QUBO that selects one candidate by binary index.
+    """Build a QUBO for ``min c'x`` subject to selecting exactly one candidate.
 
-    A one-hot model uses one qubit per candidate.  QKash instead encodes the
-    candidate row number in binary, so ``n`` candidates require
-    ``ceil(log2(n))`` qubits.  The QUBO is an optimum-preserving Hamiltonian:
-    its lowest-energy bitstring decodes to the minimum weighted-score row.
-    Extra basis states above the candidate count are treated as infeasible by
-    the decoder and cannot be the unique constructed optimum.
+    The one-hot encoding assigns one qubit per candidate, which makes the
+    objective linear in the decision variables and therefore representable
+    exactly by a quadratic form::
+
+        H(x) = sum_i s_i * x_i + A * (sum_i x_i - 1)^2
+
+    Expanding the penalty term gives ``Q[i][i] = s_i - A``, ``Q[i][j] = 2A``
+    for ``i < j``, and a constant offset of ``A``.  Every candidate score
+    enters the Hamiltonian, so the energy ordering of feasible states is the
+    score ordering.
+
+    The compact binary-index encoding is deliberately rejected, for a measured
+    reason rather than a hand-waved one.  Over ``k = ceil(log2 n)`` index bits a
+    QUBO spans only ``1 + k + k(k-1)/2`` of the ``2**k`` basis functions, and the
+    block of rows for the valid indices is rank deficient because many pairwise
+    monomials vanish on that set.  For ``n = 9`` the 11 available parameters have
+    effective rank 8 against 9 equations, so no exact representation exists; the
+    same holds for every ``n >= 8``.  For ``3 <= n <= 7`` the valid states can be
+    fitted exactly, but the unused basis states then fall below the optimum and
+    break feasibility.  Only ``n`` in ``{2, 4}`` -- where ``2**k == n`` and there
+    are no unused states -- is safe, which is too small to be useful.
+
+    Approximating the encoding by planting a classically computed optimum makes
+    every downstream solver comparison circular, so this function raises instead.
     """
+
+    if encoding == ENCODING_BINARY_INDEX:
+        raise NotImplementedError(
+            "The binary-index encoding cannot represent an arbitrary score vector "
+            "as a quadratic form over ceil(log2 n) index bits for n >= 8 (the "
+            "valid-state block is rank deficient), and for 3 <= n <= 7 the unused "
+            "basis states fall below the optimum. Use the one-hot encoding, or "
+            "quadratize an explicit HOBO with ancillas."
+        )
+    if encoding != ENCODING_ONE_HOT:
+        raise ValueError(f"Unknown QUBO encoding: {encoding}")
 
     score_vector = np.asarray(list(scores), dtype=float)
     if score_vector.size == 0:
@@ -263,29 +303,27 @@ def build_selection_qubo(
     if chosen_penalty <= 0:
         raise ValueError("penalty must be positive")
 
-    best = solve_original_exact(score_vector)
-    best_index = int(best["index"])
-    best_bits = index_to_bits(best_index, required_qubits(score_vector.size))
-    matrix = np.zeros((len(best_bits), len(best_bits)), dtype=float)
-    offset = float(best["objective"])
+    size = score_vector.size
+    matrix = np.zeros((size, size), dtype=float)
+    for i, score in enumerate(score_vector):
+        matrix[i, i] = score - chosen_penalty
+    for i in range(size):
+        for j in range(i + 1, size):
+            matrix[i, j] = 2.0 * chosen_penalty
 
-    for bit_index, target_bit in enumerate(best_bits):
-        if target_bit == 0:
-            matrix[bit_index, bit_index] += chosen_penalty
-        else:
-            offset += chosen_penalty
-            matrix[bit_index, bit_index] -= chosen_penalty
-
-    candidate_label_tuple = tuple(labels) if labels is not None else tuple(str(i) for i in range(score_vector.size))
-    variable_labels = tuple(f"b{i}" for i in range(matrix.shape[0]))
+    candidate_label_tuple = (
+        tuple(labels) if labels is not None else tuple(str(i) for i in range(size))
+    )
+    variable_labels = tuple(f"x{i}" for i in range(size))
     return QuboModel(
         matrix=matrix,
-        offset=offset,
+        offset=chosen_penalty,
         penalty=chosen_penalty,
         scores=score_vector,
         labels=variable_labels,
         candidate_labels=candidate_label_tuple,
-        optimal_index=best_index,
+        optimal_index=None,
+        encoding=ENCODING_ONE_HOT,
     )
 
 
@@ -303,9 +341,11 @@ def solve_original_exact(scores: Iterable[float]) -> dict[str, object]:
 def verify_qubo_equivalence(qubo: QuboModel, exhaustive_limit: int = 20) -> dict[str, object]:
     """Verify that the QUBO and constrained model have the same optimum.
 
-    The app must not run QAOA unless the compact binary-index QUBO decodes to
-    the same best candidate as the original constrained model.  Small circuits
-    are verified by enumerating every measured basis state.
+    The app must not run QAOA unless the QUBO's lowest-energy state decodes to
+    the same best candidate as the original constrained model.  Small instances
+    are verified by enumerating every basis state; larger ones use the analytic
+    one-hot condition ``A > min(s)``.  This check is falsifiable: a penalty at
+    or below the best score makes an infeasible state the global minimum.
     """
 
     exact = solve_original_exact(qubo.scores)
@@ -349,10 +389,10 @@ def verify_qubo_equivalence(qubo: QuboModel, exhaustive_limit: int = 20) -> dict
             else "QUBO optimum does not match the constrained model.",
         }
 
-    is_equivalent = (
-        qubo.optimal_index is not None
-        and int(qubo.optimal_index) in {int(index) for index in exact["indices"]}
-    )
+    # One-hot with non-negative scores: every infeasible state costs at least the
+    # penalty, and every feasible state costs exactly its candidate score, so the
+    # QUBO optimum is the constrained optimum precisely when A > min(s).
+    is_equivalent = float(qubo.penalty) > min_score
     return {
         "equivalent": bool(is_equivalent),
         "method": "analytic",
@@ -364,21 +404,59 @@ def verify_qubo_equivalence(qubo: QuboModel, exhaustive_limit: int = 20) -> dict
         "original_objective": min_score,
         "qubo_objective": min_score if is_equivalent else None,
         "original_indices": exact["indices"],
-        "qubo_indices": [int(qubo.optimal_index)] if is_equivalent else [],
+        "qubo_indices": list(exact["indices"]) if is_equivalent else [],
         "invalid_best_state_count": 0 if is_equivalent else None,
-        "message": "QUBO equivalence verified analytically from the compact index encoding."
+        "message": "QUBO equivalence verified analytically: penalty exceeds the best score."
         if is_equivalent
-        else "QUBO optimum does not match the constrained model.",
+        else "Penalty is too small to exclude infeasible states.",
     }
 
 
-def required_qubits(candidate_count: int) -> int:
-    """Return qubits needed to encode candidate row indices in binary."""
+def required_qubits(candidate_count: int, encoding: str = DEFAULT_ENCODING) -> int:
+    """Return the number of qubits an encoding needs for ``candidate_count`` rows."""
 
     count = int(candidate_count)
     if count <= 0:
         raise ValueError("candidate_count must be positive")
-    return max(1, (count - 1).bit_length())
+    if encoding == ENCODING_ONE_HOT:
+        return count
+    if encoding == ENCODING_BINARY_INDEX:
+        return max(1, (count - 1).bit_length())
+    raise ValueError(f"Unknown QUBO encoding: {encoding}")
+
+
+def encode_index(index: int, candidate_count: int, encoding: str = DEFAULT_ENCODING) -> list[int]:
+    """Encode a candidate row index as qubit bits under the given encoding."""
+
+    count = int(candidate_count)
+    value = int(index)
+    if not 0 <= value < count:
+        raise ValueError("index is outside the candidate range")
+    if encoding == ENCODING_ONE_HOT:
+        bits = [0] * count
+        bits[value] = 1
+        return bits
+    if encoding == ENCODING_BINARY_INDEX:
+        return index_to_bits(value, required_qubits(count, ENCODING_BINARY_INDEX))
+    raise ValueError(f"Unknown QUBO encoding: {encoding}")
+
+
+def decode_bits(
+    bits: Iterable[int],
+    candidate_count: int,
+    encoding: str = DEFAULT_ENCODING,
+) -> int | None:
+    """Decode qubit bits into a candidate index, or ``None`` when infeasible."""
+
+    if encoding == ENCODING_ONE_HOT:
+        vector = [int(bit) for bit in bits]
+        if sum(vector) != 1:
+            return None
+        index = vector.index(1)
+        return index if index < int(candidate_count) else None
+    if encoding == ENCODING_BINARY_INDEX:
+        return decode_candidate_index(bits, candidate_count)
+    raise ValueError(f"Unknown QUBO encoding: {encoding}")
 
 
 def index_to_bits(index: int, bit_count: int) -> list[int]:

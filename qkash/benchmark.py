@@ -10,7 +10,7 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
-from .scoring import decode_candidate_index, index_to_bits, required_qubits
+from .scoring import DEFAULT_ENCODING, decode_bits, encode_index, required_qubits
 
 
 # Variable descriptions.
@@ -38,12 +38,16 @@ def one_hot_index(bits: Iterable[int]) -> int | None:
     return vector.index(1)
 
 
-def sample_from_bits(bits: Iterable[int], scores: Iterable[float]) -> dict[str, object]:
-    """Convert compact binary-index bits into the common benchmark sample shape."""
+def sample_from_bits(
+    bits: Iterable[int],
+    scores: Iterable[float],
+    encoding: str = DEFAULT_ENCODING,
+) -> dict[str, object]:
+    """Convert raw solver bits into the common benchmark sample shape."""
 
     bit_list = [int(bit) for bit in bits]
     score_vector = list(scores)
-    index = decode_candidate_index(bit_list, len(score_vector))
+    index = decode_bits(bit_list, len(score_vector), encoding)
     objective = float(score_vector[index]) if index is not None else None
     return {
         "bits": bit_list,
@@ -53,12 +57,16 @@ def sample_from_bits(bits: Iterable[int], scores: Iterable[float]) -> dict[str, 
     }
 
 
-def deterministic_sample(index: int, scores: Iterable[float]) -> dict[str, object]:
-    """Create a compact binary-index sample for deterministic algorithms."""
+def deterministic_sample(
+    index: int,
+    scores: Iterable[float],
+    encoding: str = DEFAULT_ENCODING,
+) -> dict[str, object]:
+    """Create a sample for deterministic algorithms under the given encoding."""
 
     score_vector = list(scores)
-    bits = index_to_bits(int(index), required_qubits(len(score_vector)))
-    return sample_from_bits(bits, score_vector)
+    bits = encode_index(int(index), len(score_vector), encoding)
+    return sample_from_bits(bits, score_vector, encoding)
 
 
 def summarize_samples(
@@ -68,6 +76,7 @@ def summarize_samples(
     exact_indices: Iterable[int],
     runtime_s: float,
     confidence: float = 0.99,
+    device_runtime_s: float | None = None,
 ) -> dict[str, object]:
     """Compute the core metrics requested for every optimizer."""
 
@@ -79,8 +88,10 @@ def summarize_samples(
             "relative_optimality_gap": np.nan,
             "optimum_hit_probability": 0.0,
             "end_to_end_runtime_s": runtime_s,
+            "device_runtime_s": device_runtime_s if device_runtime_s is not None else np.nan,
             "stability": 0.0,
             "time_to_solution_s": np.inf,
+            "device_time_to_solution_s": np.inf,
             "runs": 0,
         }
 
@@ -115,8 +126,19 @@ def summarize_samples(
         "relative_optimality_gap": max(float(gap), 0.0) if not np.isnan(gap) else np.nan,
         "optimum_hit_probability": hit_probability,
         "end_to_end_runtime_s": float(runtime_s),
+        # device_runtime_s excludes queue, network, and the local optimization
+        # loop. Comparing a queued remote device to a local simulator on
+        # end_to_end_runtime_s measures the queue, not the hardware.
+        "device_runtime_s": (
+            float(device_runtime_s) if device_runtime_s is not None else np.nan
+        ),
         "stability": float(modal_share),
         "time_to_solution_s": time_to_solution(runtime_s, len(samples), hit_probability, confidence),
+        "device_time_to_solution_s": (
+            time_to_solution(float(device_runtime_s), len(samples), hit_probability, confidence)
+            if device_runtime_s is not None
+            else np.nan
+        ),
         "runs": len(samples),
     }
 
@@ -148,8 +170,10 @@ def metrics_frame(metrics: list[dict[str, object]]) -> pd.DataFrame:
         "relative_optimality_gap",
         "optimum_hit_probability",
         "end_to_end_runtime_s",
+        "device_runtime_s",
         "stability",
         "time_to_solution_s",
+        "device_time_to_solution_s",
         "runs",
     ]
     return pd.DataFrame(metrics, columns=columns)
@@ -178,12 +202,13 @@ def validate_solver_outputs(
     results: list[dict[str, object]],
     scores: Iterable[float],
     tolerance: float = 1e-9,
+    encoding: str = DEFAULT_ENCODING,
 ) -> list[dict[str, object]]:
     """Validate every solver result before metrics are trusted."""
 
     score_vector = list(float(score) for score in scores)
     return [
-        validate_solver_result(result, score_vector, tolerance=tolerance)
+        validate_solver_result(result, score_vector, tolerance=tolerance, encoding=encoding)
         for result in results
     ]
 
@@ -192,6 +217,7 @@ def validate_solver_result(
     result: dict[str, object],
     scores: list[float],
     tolerance: float = 1e-9,
+    encoding: str = DEFAULT_ENCODING,
 ) -> dict[str, object]:
     """Validate one solver output against the candidate score vector."""
 
@@ -213,7 +239,7 @@ def validate_solver_result(
             continue
 
         bits = sample.get("bits")
-        expected_bit_length = required_qubits(len(scores))
+        expected_bit_length = required_qubits(len(scores), encoding)
         if not isinstance(bits, list) or len(bits) != expected_bit_length:
             issues.append(f"sample {sample_number} has invalid bit length")
             continue
@@ -221,7 +247,7 @@ def validate_solver_result(
             issues.append(f"sample {sample_number} has non-binary values")
             continue
 
-        expected_index = decode_candidate_index(bits, len(scores))
+        expected_index = decode_bits(bits, len(scores), encoding)
         reported_index = sample.get("index")
         reported_feasible = bool(sample.get("feasible", False))
 

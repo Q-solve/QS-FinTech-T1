@@ -44,6 +44,9 @@ class QuantumBackendResult:
     status: str = "ok"
     note: str = ""
     job_id: str | None = None
+    # device_runtime_s is time spent executing on the machine, excluding queue,
+    # network, and submission overhead. None when the backend does not report it.
+    device_runtime_s: float | None = None
     metadata: dict[str, object] = field(default_factory=dict)
 
 
@@ -51,6 +54,13 @@ class QuantumBackend(ABC):
     """Base class for final optimized circuit execution backends."""
 
     name = "quantum-backend"
+
+    # supports_seeded_repeats says whether re-executing the same circuit with a
+    # different seed produces a genuinely different sample. Backends that ignore
+    # the seed gain nothing from repeated submissions: for a fixed circuit, N
+    # executions of M shots are equivalent to one execution of N*M shots, minus
+    # N-1 round trips. run_qaoa collapses those into a single submission.
+    supports_seeded_repeats = False
 
     @abstractmethod
     def execute(self, circuit: QuantumCircuit, shots: int) -> QuantumBackendResult:
@@ -61,6 +71,7 @@ class LocalAerBackend(QuantumBackend):
     """Run the optimized measured circuit with Qiskit Aer locally."""
 
     name = "LocalAerBackend"
+    supports_seeded_repeats = True
 
     def __init__(self, seed: int | None = None) -> None:
         self.seed = seed
@@ -68,17 +79,21 @@ class LocalAerBackend(QuantumBackend):
 
     def execute(self, circuit: QuantumCircuit, shots: int) -> QuantumBackendResult:
         started = time.perf_counter()
+        device_started = time.perf_counter()
         result = self.simulator.run(
             circuit,
             shots=max(int(shots), 1),
             seed_simulator=self.seed,
         ).result()
+        device_runtime_s = time.perf_counter() - device_started
         counts = _normalize_counts(result.get_counts(circuit), circuit.num_qubits)
         return QuantumBackendResult(
             counts=counts,
             backend_name=self.name,
             runtime_s=time.perf_counter() - started,
+            device_runtime_s=device_runtime_s,
             note="Executed final optimized circuit with Qiskit Aer.",
+            metadata={"device_time_source": "local simulator wall clock"},
         )
 
 
@@ -92,6 +107,20 @@ class QBraidBackend(QuantumBackend):
         self.api_key = get_qbraid_api_key()
         self.device_id = device_id or config.device_id
         self.timeout_s = int(timeout_s)
+        self._device = None
+
+    def _resolve_device(self) -> object:
+        """Look the device up once and reuse it for the life of this backend.
+
+        ``QbraidProvider.get_device`` caches per provider instance, so building a
+        fresh provider for every execution discards the cache and forces another
+        device-lookup round trip.
+        """
+
+        if self._device is None:
+            provider = QbraidProvider(api_key=self.api_key)
+            self._device = provider.get_device(self.device_id)
+        return self._device
 
     def execute(self, circuit: QuantumCircuit, shots: int) -> QuantumBackendResult:
         started = time.perf_counter()
@@ -100,20 +129,21 @@ class QBraidBackend(QuantumBackend):
         if not self.api_key:
             raise RuntimeError("QBRAID_API_KEY is not configured in the environment or .env file")
 
-        provider = QbraidProvider(api_key=self.api_key)
-        device = provider.get_device(self.device_id)
+        device = self._resolve_device()
         qasm_program = qasm3.dumps(circuit)
         job = device.run(qasm_program, shots=max(int(shots), 1))
         result = job.result(timeout=self.timeout_s)
         counts = _extract_qbraid_counts(result, circuit.num_qubits)
+        device_runtime_s, device_time_source = _extract_qbraid_device_runtime(result)
 
         return QuantumBackendResult(
             counts=counts,
             backend_name=self.name,
             runtime_s=time.perf_counter() - started,
+            device_runtime_s=device_runtime_s,
             note=f"Executed final optimized circuit through qBraid device {self.device_id}.",
             job_id=str(getattr(job, "id", "")) or None,
-            metadata={"device_id": self.device_id},
+            metadata={"device_id": self.device_id, "device_time_source": device_time_source},
         )
 
 
@@ -170,20 +200,50 @@ def run_qaoa(
     execution_backend_name = backend_name
     combined_counts: dict[str, int] = {}
     backend_runtime_s = 0.0
+    device_runtime_s = 0.0
+    device_time_reported = False
+    device_time_sources: list[str] = []
     execution_notes: list[str] = []
     job_ids: list[str] = []
+    probe_backend = create_quantum_backend(
+        backend_name,
+        seed=seed,
+        qbraid_device_id=qbraid_device_id,
+        qbraid_timeout_s=qbraid_timeout_s,
+    )
+    execution_backend_name = probe_backend.name
+    # The circuit and its parameters are fixed once optimization finishes. A backend
+    # that ignores the seed therefore returns statistically identical samples on every
+    # repeat, so the repeats are collapsed into one submission of the same total shots.
+    # This removes N-1 remote round trips and N-1 queue waits on qBraid.
+    collapsed_submissions = 1 if not probe_backend.supports_seeded_repeats else iteration_count
+    submitted_shots = (
+        shots_per_iteration * iteration_count
+        if collapsed_submissions == 1
+        else shots_per_iteration
+    )
     try:
-        for iteration in range(iteration_count):
-            execution_backend = create_quantum_backend(
-                backend_name,
-                seed=_iteration_seed(seed, iteration),
-                qbraid_device_id=qbraid_device_id,
-                qbraid_timeout_s=qbraid_timeout_s,
+        for iteration in range(collapsed_submissions):
+            execution_backend = (
+                probe_backend
+                if iteration == 0
+                else create_quantum_backend(
+                    backend_name,
+                    seed=_iteration_seed(seed, iteration),
+                    qbraid_device_id=qbraid_device_id,
+                    qbraid_timeout_s=qbraid_timeout_s,
+                )
             )
             execution_backend_name = execution_backend.name
-            backend_result = execution_backend.execute(final_circuit, shots=shots_per_iteration)
+            backend_result = execution_backend.execute(final_circuit, shots=submitted_shots)
             combined_counts = _merge_counts(combined_counts, backend_result.counts)
             backend_runtime_s += backend_result.runtime_s
+            if backend_result.device_runtime_s is not None:
+                device_runtime_s += float(backend_result.device_runtime_s)
+                device_time_reported = True
+            source = str(backend_result.metadata.get("device_time_source", ""))
+            if source and source not in device_time_sources:
+                device_time_sources.append(source)
             if backend_result.note and backend_result.note not in execution_notes:
                 execution_notes.append(backend_result.note)
             if backend_result.job_id:
@@ -219,11 +279,20 @@ def run_qaoa(
         "samples": samples,
         "runtime_s": time.perf_counter() - started,
         "backend_runtime_s": backend_runtime_s,
+        # device_runtime_s is on-machine execution only. It excludes the local
+        # COBYLA optimization loop, job submission, network, and queue waiting,
+        # so it is the fair basis for comparing a remote device against a local
+        # simulator. end_to_end_runtime_s remains the honest total cost.
+        "device_runtime_s": device_runtime_s if device_time_reported else None,
+        "device_time_source": "; ".join(device_time_sources) or "not reported",
+        "optimizer_runtime_s": max(time.perf_counter() - started - backend_runtime_s, 0.0),
         "best_energy_expectation": expectation,
         "parameters": params.tolist(),
         "optimization_backend": local_optimizer_backend.name,
         "execution_backend": execution_backend_name,
         "execution_iterations": iteration_count,
+        "submissions": collapsed_submissions,
+        "shots_per_submission": submitted_shots,
         "shots_per_iteration": shots_per_iteration,
         "total_shots": shots_per_iteration * iteration_count,
         "measurement_counts": combined_counts,
@@ -238,10 +307,17 @@ def run_qaoa(
         "basis_state_count": qubo.state_count,
         "invalid_state_count": qubo.invalid_state_count,
         "note": (
-            f"Optimized compact binary-index QAOA gamma/beta locally with Qiskit Aer "
+            f"Optimized one-hot QAOA gamma/beta locally with Qiskit Aer "
             f"using {optimizer_name}; "
-            f"executed final circuit {iteration_count} time(s) with "
-            f"{shots_per_iteration} shots each. {' '.join(execution_notes)}"
+            f"executed the final circuit in {collapsed_submissions} submission(s) of "
+            f"{submitted_shots} shots for {shots_per_iteration * iteration_count} total shots"
+            + (
+                f" ({execution_backend_name} ignores the seed, so {iteration_count} "
+                f"repeats were collapsed into one submission)."
+                if collapsed_submissions == 1 and iteration_count > 1
+                else "."
+            )
+            + f" {' '.join(execution_notes)}"
         ),
     }
 
@@ -389,7 +465,7 @@ def _samples_from_counts(counts: dict[str, int], qubo: QuboModel) -> list[dict[s
     samples: list[dict[str, object]] = []
     for bitstring, count in counts.items():
         bits = _bitstring_to_bits(bitstring, qubo.size)
-        sample = sample_from_bits(bits, qubo.scores)
+        sample = sample_from_bits(bits, qubo.scores, qubo.encoding)
         sample["energy"] = qubo.energy(bits)
         samples.extend([sample] * int(count))
     return samples
@@ -410,6 +486,41 @@ def _iteration_seed(seed: int | None, iteration: int) -> int | None:
     if seed is None:
         return None
     return int(seed) + int(iteration)
+
+
+def _extract_qbraid_device_runtime(result: object) -> tuple[float | None, str]:
+    """Return on-machine execution seconds reported by qBraid, if available.
+
+    qBraid results carry a ``TimeStamps`` record whose ``executionDuration`` is
+    measured in milliseconds around the simulation itself, so it excludes queue
+    and network time.  When the device does not report it, the schema falls back
+    to ``endedAt - createdAt``, which *does* include queue time; that case is
+    labelled so a reader never mistakes it for machine time.
+    """
+
+    details = getattr(result, "details", None)
+    stamps = None
+    if isinstance(details, dict):
+        stamps = details.get("time_stamps") or details.get("timeStamps")
+    if stamps is None:
+        stamps = getattr(result, "time_stamps", None)
+    if stamps is None:
+        return None, "not reported by device"
+
+    duration_ms = getattr(stamps, "executionDuration", None)
+    if duration_ms is None and isinstance(stamps, dict):
+        duration_ms = stamps.get("executionDuration")
+    if duration_ms is None:
+        return None, "not reported by device"
+
+    created = getattr(stamps, "createdAt", None)
+    ended = getattr(stamps, "endedAt", None)
+    source = "qBraid executionDuration"
+    if created is not None and ended is not None:
+        derived_ms = (ended - created).total_seconds() * 1000.0
+        if abs(derived_ms - float(duration_ms)) < 1.0:
+            source = "qBraid endedAt-createdAt (includes queue)"
+    return float(duration_ms) / 1000.0, source
 
 
 def _extract_qbraid_counts(result: object, num_qubits: int) -> dict[str, int]:
