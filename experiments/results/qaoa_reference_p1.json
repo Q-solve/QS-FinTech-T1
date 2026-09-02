@@ -1,0 +1,2654 @@
+{
+  "schema_version": "1.0",
+  "generated_at_utc": "2026-09-02T06:57:05.472141+00:00",
+  "package_versions": {
+    "python": "3.11.16",
+    "qiskit": "2.5.2",
+    "qiskit-aer": "0.17.2",
+    "qiskit-algorithms": "0.4.0",
+    "qiskit-optimization": "0.7.0",
+    "scipy": "1.17.1",
+    "numpy": "2.4.6"
+  },
+  "experiment_configuration": {
+    "period": "2025_3Q",
+    "corridor": "KENTZA",
+    "benchmark": "CC2",
+    "benchmark_amount": 45000.0,
+    "benchmark_currency": "KES",
+    "weights": {
+      "fee_weight": 0.4,
+      "fx_weight": 0.3,
+      "speed_weight": 0.3
+    },
+    "penalty": 2.0,
+    "minimum_safe_penalty_condition": "P > 0.0012578390325420881",
+    "reps": 1,
+    "shots": 2048,
+    "optimizer": "COBYLA",
+    "maximum_iterations": 60,
+    "seeds": [
+      11,
+      29,
+      47,
+      71,
+      97
+    ],
+    "qubit_count": 14,
+    "mixer": "standard X mixer",
+    "simulator": "qiskit-aer SamplerV2 (local, noiseless finite-shot)",
+    "runtime_interpretation": "Experimental implementation timing only; not evidence of quantum speedup.",
+    "provenance": {
+      "raw_dataset_sha256_from_audit": "7d3b394c0db9a8c4227cccd52bb73e09c026f3f1a74de6befdee8b6477ab1ce4",
+      "processed_dataset_path": "data/processed/remittance_east_africa_clean.csv",
+      "processed_dataset_sha256": "0b8f69c8c516fa9ea38951c80724f701ff2b16f2064e37ec3cc66c3b243fac90",
+      "data_audit": "docs/data_audit.md",
+      "normalization": {
+        "method": "min-max within the eligible comparison set",
+        "direction": "lower is better for fee, FX margin, and speed ordinal",
+        "constant_feature_treatment": "all normalized values are zero",
+        "bounds": {
+          "fee_percentage": {
+            "minimum": 1.1111111111111112,
+            "maximum": 13.478000000000002
+          },
+          "fx_margin": {
+            "minimum": -0.69,
+            "maximum": 8.64
+          },
+          "speed_ordinal": {
+            "minimum": 0,
+            "maximum": 3
+          }
+        }
+      },
+      "objective_inputs_in_variable_order": [
+        {
+          "variable": "x_0",
+          "alternative_id": "alt-16a0d6dbadda",
+          "provider": "United Bank for Africa (UBA)",
+          "payment_instrument": "Bank account transfer",
+          "pickup_method": "Bank account",
+          "fee_percentage": 6.772222222222222,
+          "fx_margin": 3.1,
+          "speed_ordinal": 3,
+          "normalized": {
+            "fee": 0.45776356220014014,
+            "fx": 0.4062165058949625,
+            "speed": 1.0
+          },
+          "weighted_score": 0.6049703766485448
+        },
+        {
+          "variable": "x_1",
+          "alternative_id": "alt-20844375cc3e",
+          "provider": "M-Pesa",
+          "payment_instrument": "Mobile money",
+          "pickup_method": "Cash",
+          "fee_percentage": 1.1111111111111112,
+          "fx_margin": 8.64,
+          "speed_ordinal": 0,
+          "normalized": {
+            "fee": 0.0,
+            "fx": 1.0,
+            "speed": 0.0
+          },
+          "weighted_score": 0.3
+        },
+        {
+          "variable": "x_2",
+          "alternative_id": "alt-29fa0176acdd",
+          "provider": "ABC Bank",
+          "payment_instrument": "Bank account transfer",
+          "pickup_method": "Bank account",
+          "fee_percentage": 4.0,
+          "fx_margin": 1.81,
+          "speed_ordinal": 3,
+          "normalized": {
+            "fee": 0.2335986774721029,
+            "fx": 0.2679528403001072,
+            "speed": 1.0
+          },
+          "weighted_score": 0.4738253230788733
+        },
+        {
+          "variable": "x_3",
+          "alternative_id": "alt-503fc0f80db8",
+          "provider": "KCB Bank",
+          "payment_instrument": "Bank account transfer",
+          "pickup_method": "Bank account",
+          "fee_percentage": 5.333333333333334,
+          "fx_margin": 1.81,
+          "speed_ordinal": 3,
+          "normalized": {
+            "fee": 0.3414134516899966,
+            "fx": 0.2679528403001072,
+            "speed": 1.0
+          },
+          "weighted_score": 0.5169512327660308
+        },
+        {
+          "variable": "x_4",
+          "alternative_id": "alt-5e860c308bdb",
+          "provider": "M-Pesa",
+          "payment_instrument": "Mobile money",
+          "pickup_method": "Mobile wallet",
+          "fee_percentage": 1.1111111111111112,
+          "fx_margin": 8.64,
+          "speed_ordinal": 0,
+          "normalized": {
+            "fee": 0.0,
+            "fx": 1.0,
+            "speed": 0.0
+          },
+          "weighted_score": 0.3
+        },
+        {
+          "variable": "x_5",
+          "alternative_id": "alt-60f5f9067629",
+          "provider": "EcoBank Rapid Transfer",
+          "payment_instrument": "Bank account transfer",
+          "pickup_method": "Cash",
+          "fee_percentage": 2.811111111111111,
+          "fx_margin": 1.81,
+          "speed_ordinal": 0,
+          "normalized": {
+            "fee": 0.13746383712781438,
+            "fx": 0.2679528403001072,
+            "speed": 0.0
+          },
+          "weighted_score": 0.1353713869411579
+        },
+        {
+          "variable": "x_6",
+          "alternative_id": "alt-9243c33ae323",
+          "provider": "UBA Africash",
+          "payment_instrument": "Cash",
+          "pickup_method": "Cash",
+          "fee_percentage": 2.493333333333333,
+          "fx_margin": 3.14,
+          "speed_ordinal": 0,
+          "normalized": {
+            "fee": 0.11176798260588305,
+            "fx": 0.4105037513397642,
+            "speed": 0.0
+          },
+          "weighted_score": 0.16785831844428248
+        },
+        {
+          "variable": "x_7",
+          "alternative_id": "alt-92a686bc27e8",
+          "provider": "EcoBank Rapid Transfer",
+          "payment_instrument": "Cash",
+          "pickup_method": "Cash",
+          "fee_percentage": 2.811111111111111,
+          "fx_margin": 1.81,
+          "speed_ordinal": 0,
+          "normalized": {
+            "fee": 0.13746383712781438,
+            "fx": 0.2679528403001072,
+            "speed": 0.0
+          },
+          "weighted_score": 0.1353713869411579
+        },
+        {
+          "variable": "x_8",
+          "alternative_id": "alt-9b44600ea942",
+          "provider": "GT Bank",
+          "payment_instrument": "Bank account transfer",
+          "pickup_method": "Bank account",
+          "fee_percentage": 6.550000000000001,
+          "fx_margin": 1.81,
+          "speed_ordinal": 2,
+          "normalized": {
+            "fee": 0.43979443316382455,
+            "fx": 0.2679528403001072,
+            "speed": 0.6666666666666666
+          },
+          "weighted_score": 0.4563036253555619
+        },
+        {
+          "variable": "x_9",
+          "alternative_id": "alt-a95dd80e8eea",
+          "provider": "Ecobank",
+          "payment_instrument": "Cash",
+          "pickup_method": "Cash",
+          "fee_percentage": 13.478000000000002,
+          "fx_margin": 1.81,
+          "speed_ordinal": 1,
+          "normalized": {
+            "fee": 1.0,
+            "fx": 0.2679528403001072,
+            "speed": 0.3333333333333333
+          },
+          "weighted_score": 0.5803858520900321
+        },
+        {
+          "variable": "x_10",
+          "alternative_id": "alt-ac5be959dbde",
+          "provider": "MoneyGram",
+          "payment_instrument": "Cash",
+          "pickup_method": "Cash",
+          "fee_percentage": 1.2222222222222223,
+          "fx_margin": 4.32,
+          "speed_ordinal": 0,
+          "normalized": {
+            "fee": 0.008984564518157807,
+            "fx": 0.5369774919614148,
+            "speed": 0.0
+          },
+          "weighted_score": 0.16468707339568753
+        },
+        {
+          "variable": "x_11",
+          "alternative_id": "alt-c77e722fb62f",
+          "provider": "Development Bank of Kenya",
+          "payment_instrument": "Bank account transfer",
+          "pickup_method": "Bank account",
+          "fee_percentage": 5.633333333333333,
+          "fx_margin": 5.65,
+          "speed_ordinal": 3,
+          "normalized": {
+            "fee": 0.3656717758890226,
+            "fx": 0.6795284030010718,
+            "speed": 1.0
+          },
+          "weighted_score": 0.6501272312559305
+        },
+        {
+          "variable": "x_12",
+          "alternative_id": "alt-cc1e0457fb2b",
+          "provider": "Western Union",
+          "payment_instrument": "Cash",
+          "pickup_method": "Cash",
+          "fee_percentage": 1.15,
+          "fx_margin": -0.69,
+          "speed_ordinal": 0,
+          "normalized": {
+            "fee": 0.00314459758135522,
+            "fx": 0.0,
+            "speed": 0.0
+          },
+          "weighted_score": 0.0012578390325420881
+        },
+        {
+          "variable": "x_13",
+          "alternative_id": "alt-f5f6dbf518bd",
+          "provider": "MoneyGram",
+          "payment_instrument": "Cash",
+          "pickup_method": "Mobile wallet",
+          "fee_percentage": 1.2222222222222223,
+          "fx_margin": 4.32,
+          "speed_ordinal": 0,
+          "normalized": {
+            "fee": 0.008984564518157807,
+            "fx": 0.5369774919614148,
+            "speed": 0.0
+          },
+          "weighted_score": 0.16468707339568753
+        }
+      ]
+    }
+  },
+  "exact_reference": {
+    "classical_solver": "direct_weighted_argmin",
+    "classical_runtime_seconds": 4.6250002924352884e-05,
+    "bit_string_x0_to_xn": "00000000000010",
+    "qiskit_state_label_xn_to_x0": "01000000000000",
+    "qubo_energy": 0.001257839032542174,
+    "weighted_score": 0.0012578390325420881,
+    "feasible": true,
+    "alternative_id": "alt-cc1e0457fb2b",
+    "provider": "Western Union",
+    "payment_instrument": "Cash",
+    "pickup_method": "Cash",
+    "mathematical_optimization": {
+      "solver": "qiskit_scipy_milp_highs",
+      "runtime_seconds": 0.0012435420067049563,
+      "success": true,
+      "status": "SUCCESS",
+      "message": "Optimization terminated successfully. (HiGHS Status 7: Optimal)",
+      "feasible": true,
+      "bit_string_x0_to_xn": "00000000000010",
+      "weighted_score": 0.0012578390325420881,
+      "alternative_id": "alt-cc1e0457fb2b",
+      "mip_gap": 0.0,
+      "mip_dual_bound": 0.0012578390325420881,
+      "mip_node_count": 0
+    }
+  },
+  "runs": [
+    {
+      "success": true,
+      "message": "At least one feasible exactly-one state was sampled.",
+      "raw_most_probable_state": {
+        "qiskit_state_label_xn_to_x0": "00000000000000",
+        "bit_string_x0_to_xn": "00000000000000",
+        "probability": 0.447265625,
+        "feasible": false,
+        "qubo_energy": 2.0,
+        "weighted_score": null,
+        "selected_alternative_id": null,
+        "provider": null,
+        "payment_instrument": null,
+        "pickup_method": null
+      },
+      "best_feasible_sampled_state": {
+        "qiskit_state_label_xn_to_x0": "01000000000000",
+        "bit_string_x0_to_xn": "00000000000010",
+        "probability": 0.02294921875,
+        "feasible": true,
+        "qubo_energy": 0.001257839032542174,
+        "weighted_score": 0.0012578390325420881,
+        "selected_alternative_id": "alt-cc1e0457fb2b",
+        "provider": "Western Union",
+        "payment_instrument": "Cash",
+        "pickup_method": "Cash"
+      },
+      "feasible_state_probabilities": {
+        "00000000000001": 0.02734375,
+        "00000000000010": 0.02734375,
+        "00000000000100": 0.0341796875,
+        "00000000001000": 0.02587890625,
+        "00000000010000": 0.02587890625,
+        "00000000100000": 0.0224609375,
+        "00000001000000": 0.02685546875,
+        "00000010000000": 0.02197265625,
+        "00000100000000": 0.03369140625,
+        "00001000000000": 0.03173828125,
+        "00010000000000": 0.0244140625,
+        "00100000000000": 0.025390625,
+        "01000000000000": 0.02294921875,
+        "10000000000000": 0.02490234375
+      },
+      "feasible_probability": 0.375,
+      "exact_optimal_bit_strings_x0_to_xn": [
+        "00000000000010"
+      ],
+      "exact_optimal_qiskit_labels_xn_to_x0": [
+        "01000000000000"
+      ],
+      "exact_weighted_score": 0.0012578390325420881,
+      "optimal_state_probability": 0.02294921875,
+      "exact_optimum_sampled": true,
+      "exact_optimum_most_probable": false,
+      "best_feasible_weighted_score": 0.0012578390325420881,
+      "absolute_optimality_gap": 0.0,
+      "metrics": {
+        "qubit_count": 14,
+        "qaoa_repetitions": 1,
+        "shots": 2048,
+        "algorithm_seed": 11,
+        "simulator_seed": 11,
+        "transpiler_seed": 11,
+        "optimizer": "COBYLA",
+        "maximum_iterations": 60,
+        "actual_evaluations": 31,
+        "ising_conversion_time_seconds": 0.005368500016629696,
+        "circuit_construction_time_seconds": 0.024096000008285046,
+        "transpilation_time_seconds": 0.0010440420010127127,
+        "optimization_time_seconds": 0.3897569179534912,
+        "optimizer_sampler_time_seconds": 0.1910426268586889,
+        "final_sampling_time_seconds": 0.0058166669914498925,
+        "queue_time_seconds": 0.0,
+        "total_execution_time_seconds": 0.4584659999818541,
+        "circuit": {
+          "original_depth": 28,
+          "decomposed_depth": 78,
+          "transpiled_depth": 28,
+          "number_of_parameters": 2
+        }
+      },
+      "optimal_parameters": [
+        0.958980978858228,
+        -0.06247317408515933
+      ],
+      "final_expectation_value_without_ising_offset": -76.97031804784395,
+      "ising_offset": 81.32589835967275,
+      "callback_history": [
+        {
+          "evaluation_number": 1,
+          "parameters": [
+            0.8078304089805352,
+            -0.009074648212064388
+          ],
+          "expectation_value": -33.35412139281495,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 2,
+          "parameters": [
+            1.8078304089805353,
+            -0.009074648212064388
+          ],
+          "expectation_value": 18.009447703305188,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 3,
+          "parameters": [
+            0.8078304089805352,
+            0.9909253517879356
+          ],
+          "expectation_value": 39.91071299903203,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 4,
+          "parameters": [
+            0.23378176181251775,
+            -0.8278958440079286
+          ],
+          "expectation_value": 12.89946507263699,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 5,
+          "parameters": [
+            0.5650950260911359,
+            0.4280518024787361
+          ],
+          "expectation_value": 34.63314592470098,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 6,
+          "parameters": [
+            1.0425744859329442,
+            -0.09507010353245611
+          ],
+          "expectation_value": -58.93640983656221,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 7,
+          "parameters": [
+            1.289677652510089,
+            -0.13301776574698265
+          ],
+          "expectation_value": 1.6966037037950625,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 8,
+          "parameters": [
+            1.0349849534900388,
+            -0.14449073684788508
+          ],
+          "expectation_value": 48.4052193762804,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 9,
+          "parameters": [
+            1.0465618871094937,
+            0.004850368002946762
+          ],
+          "expectation_value": 16.022965200886553,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 10,
+          "parameters": [
+            0.9926142501652427,
+            -0.09307640294418135
+          ],
+          "expectation_value": -61.03228828852674,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 11,
+          "parameters": [
+            0.9830541939343685,
+            -0.1926183806463675
+          ],
+          "expectation_value": 94.72044762885847,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 12,
+          "parameters": [
+            0.9932672528206562,
+            -0.04308066725070421
+          ],
+          "expectation_value": -72.0733128044183,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 13,
+          "parameters": [
+            0.9858655030074854,
+            0.006368438906062951
+          ],
+          "expectation_value": 24.46399095052231,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 14,
+          "parameters": [
+            0.9742833310080953,
+            -0.05934752658539364
+          ],
+          "expectation_value": -75.67553934259496,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 15,
+          "parameters": [
+            0.9644397852634734,
+            -0.05758553703561275
+          ],
+          "expectation_value": -75.8424342869193,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 16,
+          "parameters": [
+            0.9617377793821213,
+            -0.06721357755365892
+          ],
+          "expectation_value": -76.28461571285895,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 17,
+          "parameters": [
+            0.9565206859385225,
+            -0.0757448105243823
+          ],
+          "expectation_value": -75.29355370312616,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 18,
+          "parameters": [
+            0.9585393676880968,
+            -0.06337038062460013
+          ],
+          "expectation_value": -76.79664568586438,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 19,
+          "parameters": [
+            0.9580627026858098,
+            -0.058393153437139744
+          ],
+          "expectation_value": -76.26355588013163,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 20,
+          "parameters": [
+            0.9575785684558321,
+            -0.06416998354810627
+          ],
+          "expectation_value": -76.58032448660376,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 21,
+          "parameters": [
+            0.9593786974906394,
+            -0.06101548668164565
+          ],
+          "expectation_value": -75.92735760224653,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 22,
+          "parameters": [
+            0.9593035089674181,
+            -0.06401542954153365
+          ],
+          "expectation_value": -76.75092834903094,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 23,
+          "parameters": [
+            0.958980978858228,
+            -0.06247317408515933
+          ],
+          "expectation_value": -76.97031804784395,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 24,
+          "parameters": [
+            0.9598233987915811,
+            -0.0606592477757715
+          ],
+          "expectation_value": -75.9440420136181,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 25,
+          "parameters": [
+            0.9579836913116212,
+            -0.06254677808901116
+          ],
+          "expectation_value": -76.43612287871125,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 26,
+          "parameters": [
+            0.9598810255299377,
+            -0.06203738056897962
+          ],
+          "expectation_value": -76.52663569864343,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 27,
+          "parameters": [
+            0.9584821890801325,
+            -0.06243840689851081
+          ],
+          "expectation_value": -76.5456148190121,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 28,
+          "parameters": [
+            0.95898967065489,
+            -0.06234847664063546
+          ],
+          "expectation_value": -76.6580881106545,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 29,
+          "parameters": [
+            0.9590448136751926,
+            -0.062714886964715
+          ],
+          "expectation_value": -76.77114336165626,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 30,
+          "parameters": [
+            0.9589310998804185,
+            -0.06246969736649448
+          ],
+          "expectation_value": -76.92423842179343,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 31,
+          "parameters": [
+            0.9590089862078701,
+            -0.06256917194120841
+          ],
+          "expectation_value": -76.60427128069927,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        }
+      ]
+    },
+    {
+      "success": true,
+      "message": "At least one feasible exactly-one state was sampled.",
+      "raw_most_probable_state": {
+        "qiskit_state_label_xn_to_x0": "00000100000001",
+        "bit_string_x0_to_xn": "10000000100000",
+        "probability": 0.00146484375,
+        "feasible": false,
+        "qubo_energy": 3.0612740020041067,
+        "weighted_score": null,
+        "selected_alternative_id": null,
+        "provider": null,
+        "payment_instrument": null,
+        "pickup_method": null
+      },
+      "best_feasible_sampled_state": {
+        "qiskit_state_label_xn_to_x0": "00000000010000",
+        "bit_string_x0_to_xn": "00001000000000",
+        "probability": 0.00048828125,
+        "feasible": true,
+        "qubo_energy": 0.30000000000000004,
+        "weighted_score": 0.3,
+        "selected_alternative_id": "alt-5e860c308bdb",
+        "provider": "M-Pesa",
+        "payment_instrument": "Mobile money",
+        "pickup_method": "Mobile wallet"
+      },
+      "feasible_state_probabilities": {
+        "00000000000001": 0.0,
+        "00000000000010": 0.0,
+        "00000000000100": 0.0,
+        "00000000001000": 0.0,
+        "00000000010000": 0.00048828125,
+        "00000000100000": 0.0,
+        "00000001000000": 0.0,
+        "00000010000000": 0.0,
+        "00000100000000": 0.0,
+        "00001000000000": 0.0,
+        "00010000000000": 0.0,
+        "00100000000000": 0.0,
+        "01000000000000": 0.0,
+        "10000000000000": 0.0
+      },
+      "feasible_probability": 0.00048828125,
+      "exact_optimal_bit_strings_x0_to_xn": [
+        "00000000000010"
+      ],
+      "exact_optimal_qiskit_labels_xn_to_x0": [
+        "01000000000000"
+      ],
+      "exact_weighted_score": 0.0012578390325420881,
+      "optimal_state_probability": 0.0,
+      "exact_optimum_sampled": false,
+      "exact_optimum_most_probable": false,
+      "best_feasible_weighted_score": 0.3,
+      "absolute_optimality_gap": 0.2987421609674579,
+      "metrics": {
+        "qubit_count": 14,
+        "qaoa_repetitions": 1,
+        "shots": 2048,
+        "algorithm_seed": 29,
+        "simulator_seed": 29,
+        "transpiler_seed": 29,
+        "optimizer": "COBYLA",
+        "maximum_iterations": 60,
+        "actual_evaluations": 33,
+        "ising_conversion_time_seconds": 0.005621542048174888,
+        "circuit_construction_time_seconds": 0.01870187500026077,
+        "transpilation_time_seconds": 0.00040904199704527855,
+        "optimization_time_seconds": 0.6104168891906738,
+        "optimizer_sampler_time_seconds": 0.23460058477940038,
+        "final_sampling_time_seconds": 0.007291208952665329,
+        "queue_time_seconds": 0.0,
+        "total_execution_time_seconds": 0.6780376670067199,
+        "circuit": {
+          "original_depth": 28,
+          "decomposed_depth": 78,
+          "transpiled_depth": 28,
+          "number_of_parameters": 2
+        }
+      },
+      "optimal_parameters": [
+        1.625506097029498,
+        2.1589845887507795
+      ],
+      "final_expectation_value_without_ising_offset": -1.5960721096647819,
+      "ising_offset": 81.32589835967275,
+      "callback_history": [
+        {
+          "evaluation_number": 1,
+          "parameters": [
+            0.3144543887975381,
+            0.07944834698346662
+          ],
+          "expectation_value": 96.7766828533995,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 2,
+          "parameters": [
+            1.3144543887975382,
+            0.07944834698346662
+          ],
+          "expectation_value": 83.84299400482348,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 3,
+          "parameters": [
+            1.3144543887975382,
+            1.0794483469834666
+          ],
+          "expectation_value": 10.7204979849357,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 4,
+          "parameters": [
+            1.4886278370238142,
+            2.0641633361722005
+          ],
+          "expectation_value": 1.1691300368973425,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 5,
+          "parameters": [
+            2.48602330894377,
+            1.992036554782978
+          ],
+          "expectation_value": 34.98820919935545,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 6,
+          "parameters": [
+            0.5845524272356282,
+            2.49153630375008
+          ],
+          "expectation_value": 29.447321889791493,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 7,
+          "parameters": [
+            1.9852863552622748,
+            2.1218722285647664
+          ],
+          "expectation_value": 19.451293990191015,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 8,
+          "parameters": [
+            1.2587356403434529,
+            2.1623956012660996
+          ],
+          "expectation_value": 12.29229867576768,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 9,
+          "parameters": [
+            1.4689813840050343,
+            2.0181848968361282
+          ],
+          "expectation_value": 2.154792481433185,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 10,
+          "parameters": [
+            1.5886190470159585,
+            2.065489203551286
+          ],
+          "expectation_value": 0.3156570764588489,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 11,
+          "parameters": [
+            1.6306942521672498,
+            2.156206771372942
+          ],
+          "expectation_value": -0.16964217427584294,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 12,
+          "parameters": [
+            1.7293711710350448,
+            2.1724199044063384
+          ],
+          "expectation_value": 2.5944733100340387,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 13,
+          "parameters": [
+            1.5884824357410448,
+            2.1830053264459375
+          ],
+          "expectation_value": 0.4927640017972898,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 14,
+          "parameters": [
+            1.6555676152736871,
+            2.153693644281981
+          ],
+          "expectation_value": 1.678643171391653,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 15,
+          "parameters": [
+            1.631196877585442,
+            2.1611814439942294
+          ],
+          "expectation_value": 0.3636392280823553,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 16,
+          "parameters": [
+            1.6242000210657737,
+            2.148602498731813
+          ],
+          "expectation_value": -0.16551916075847695,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 17,
+          "parameters": [
+            1.6268921158466854,
+            2.15945388692368
+          ],
+          "expectation_value": -1.0975208490686967,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 18,
+          "parameters": [
+            1.6193022904418877,
+            2.165964996685056
+          ],
+          "expectation_value": -1.0264911774159544,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 19,
+          "parameters": [
+            1.6304164559283176,
+            2.163000579324918
+          ],
+          "expectation_value": 0.4215342748747837,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 20,
+          "parameters": [
+            1.6277787889469948,
+            2.1585728019032717
+          ],
+          "expectation_value": -0.9841664701658013,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 21,
+          "parameters": [
+            1.6246963539508537,
+            2.15825863393924
+          ],
+          "expectation_value": -0.4618838361453029,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 22,
+          "parameters": [
+            1.6273552384705627,
+            2.160340181138517
+          ],
+          "expectation_value": -0.8945049464223377,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 23,
+          "parameters": [
+            1.6259824120487614,
+            2.1590386291723465
+          ],
+          "expectation_value": -1.26599758379448,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 24,
+          "parameters": [
+            1.6250092860426888,
+            2.158808355907929
+          ],
+          "expectation_value": -0.7490107664975428,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 25,
+          "parameters": [
+            1.6260547654983737,
+            2.1595333664544762
+          ],
+          "expectation_value": -1.0421542773168473,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 26,
+          "parameters": [
+            1.626106096369294,
+            2.1590205408099434
+          ],
+          "expectation_value": -0.9112933481867049,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 27,
+          "parameters": [
+            1.6257324279000196,
+            2.1590358139675843
+          ],
+          "expectation_value": -1.4590498841168114,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 28,
+          "parameters": [
+            1.6255038146804857,
+            2.158934640869113
+          ],
+          "expectation_value": -1.5959231983480595,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 29,
+          "parameters": [
+            1.6253908665945578,
+            2.1587116100867414
+          ],
+          "expectation_value": -1.0394679195898664,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 30,
+          "parameters": [
+            1.6254592085240114,
+            2.1589572304862985
+          ],
+          "expectation_value": -1.3487792403716412,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 31,
+          "parameters": [
+            1.625603710443819,
+            2.158930076171088
+          ],
+          "expectation_value": -1.571383681663403,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 32,
+          "parameters": [
+            1.625506097029498,
+            2.1589845887507795
+          ],
+          "expectation_value": -1.5960721096647819,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 33,
+          "parameters": [
+            1.6254062640175,
+            2.1589903654033913
+          ],
+          "expectation_value": -1.1318652093349963,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        }
+      ]
+    },
+    {
+      "success": true,
+      "message": "At least one feasible exactly-one state was sampled.",
+      "raw_most_probable_state": {
+        "qiskit_state_label_xn_to_x0": "00000000000000",
+        "bit_string_x0_to_xn": "00000000000000",
+        "probability": 0.13134765625,
+        "feasible": false,
+        "qubo_energy": 2.0,
+        "weighted_score": null,
+        "selected_alternative_id": null,
+        "provider": null,
+        "payment_instrument": null,
+        "pickup_method": null
+      },
+      "best_feasible_sampled_state": {
+        "qiskit_state_label_xn_to_x0": "01000000000000",
+        "bit_string_x0_to_xn": "00000000000010",
+        "probability": 0.06201171875,
+        "feasible": true,
+        "qubo_energy": 0.001257839032542174,
+        "weighted_score": 0.0012578390325420881,
+        "selected_alternative_id": "alt-cc1e0457fb2b",
+        "provider": "Western Union",
+        "payment_instrument": "Cash",
+        "pickup_method": "Cash"
+      },
+      "feasible_state_probabilities": {
+        "00000000000001": 0.02685546875,
+        "00000000000010": 0.00537109375,
+        "00000000000100": 0.01318359375,
+        "00000000001000": 0.013671875,
+        "00000000010000": 0.00732421875,
+        "00000000100000": 0.029296875,
+        "00000001000000": 0.0166015625,
+        "00000010000000": 0.0234375,
+        "00000100000000": 0.0078125,
+        "00001000000000": 0.02197265625,
+        "00010000000000": 0.01904296875,
+        "00100000000000": 0.04296875,
+        "01000000000000": 0.06201171875,
+        "10000000000000": 0.01953125
+      },
+      "feasible_probability": 0.30908203125,
+      "exact_optimal_bit_strings_x0_to_xn": [
+        "00000000000010"
+      ],
+      "exact_optimal_qiskit_labels_xn_to_x0": [
+        "01000000000000"
+      ],
+      "exact_weighted_score": 0.0012578390325420881,
+      "optimal_state_probability": 0.06201171875,
+      "exact_optimum_sampled": true,
+      "exact_optimum_most_probable": false,
+      "best_feasible_weighted_score": 0.0012578390325420881,
+      "absolute_optimality_gap": 0.0,
+      "metrics": {
+        "qubit_count": 14,
+        "qaoa_repetitions": 1,
+        "shots": 2048,
+        "algorithm_seed": 47,
+        "simulator_seed": 47,
+        "transpiler_seed": 47,
+        "optimizer": "COBYLA",
+        "maximum_iterations": 60,
+        "actual_evaluations": 32,
+        "ising_conversion_time_seconds": 0.005631333973724395,
+        "circuit_construction_time_seconds": 0.01901883300160989,
+        "transpilation_time_seconds": 0.0004579169908538461,
+        "optimization_time_seconds": 0.37689685821533203,
+        "optimizer_sampler_time_seconds": 0.19829887303058058,
+        "final_sampling_time_seconds": 0.006172374996822327,
+        "queue_time_seconds": 0.0,
+        "total_execution_time_seconds": 0.4430392080103047,
+        "circuit": {
+          "original_depth": 28,
+          "decomposed_depth": 78,
+          "transpiled_depth": 28,
+          "number_of_parameters": 2
+        }
+      },
+      "optimal_parameters": [
+        5.67989499164459,
+        3.163262213742193
+      ],
+      "final_expectation_value_without_ising_offset": -76.64926228046123,
+      "ising_offset": 81.32589835967275,
+      "callback_history": [
+        {
+          "evaluation_number": 1,
+          "parameters": [
+            4.660879393574647,
+            3.1876963692310913
+          ],
+          "expectation_value": 12.313023993714673,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 2,
+          "parameters": [
+            5.660879393574647,
+            3.1876963692310913
+          ],
+          "expectation_value": -65.02004249155708,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 3,
+          "parameters": [
+            5.660879393574647,
+            4.187696369231091
+          ],
+          "expectation_value": 16.600895889662294,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 4,
+          "parameters": [
+            6.348661382369105,
+            2.4617790627216376
+          ],
+          "expectation_value": 0.7696183543068978,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 5,
+          "parameters": [
+            5.874237652884678,
+            3.6398890860943705
+          ],
+          "expectation_value": 13.552946161414372,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 6,
+          "parameters": [
+            5.433838546437821,
+            3.083042397823445
+          ],
+          "expectation_value": 57.82817229508637,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 7,
+          "parameters": [
+            5.681810187856176,
+            3.142288199803726
+          ],
+          "expectation_value": -73.53715402453965,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 8,
+          "parameters": [
+            5.781328101597098,
+            3.1520955870528633
+          ],
+          "expectation_value": -73.15020256079917,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 9,
+          "parameters": [
+            5.689495641751573,
+            3.0425839682063573
+          ],
+          "expectation_value": 133.4789260627612,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 10,
+          "parameters": [
+            5.676813519035509,
+            3.1920379063425246
+          ],
+          "expectation_value": -61.14414643265261,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 11,
+          "parameters": [
+            5.669372761221477,
+            3.1410390325985595
+          ],
+          "expectation_value": -73.17306908615518,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 12,
+          "parameters": [
+            5.687194591426538,
+            3.117874920667332
+          ],
+          "expectation_value": -45.75605758325201,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 13,
+          "parameters": [
+            5.681069329085115,
+            3.152260718456571
+          ],
+          "expectation_value": -76.14115070170838,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 14,
+          "parameters": [
+            5.681185075823064,
+            3.162260048568766
+          ],
+          "expectation_value": -76.30870624643362,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 15,
+          "parameters": [
+            5.691168215795136,
+            3.16284049348263
+          ],
+          "expectation_value": -76.11154461273496,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 16,
+          "parameters": [
+            5.673450901665119,
+            3.1685990193128677
+          ],
+          "expectation_value": -75.18947676944688,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 17,
+          "parameters": [
+            5.6861625784836844,
+            3.1627338283314432
+          ],
+          "expectation_value": -76.16033604243952,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 18,
+          "parameters": [
+            5.678989536133059,
+            3.1634557096702554
+          ],
+          "expectation_value": -76.33589178377461,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 19,
+          "parameters": [
+            5.6785164782934086,
+            3.1659105449560423
+          ],
+          "expectation_value": -76.19893668085172,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 20,
+          "parameters": [
+            5.678498569075902,
+            3.163361098102325
+          ],
+          "expectation_value": -76.28206271924243,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 21,
+          "parameters": [
+            5.679950499469531,
+            3.163179033928714
+          ],
+          "expectation_value": -76.54111843136133,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 22,
+          "parameters": [
+            5.681945030801258,
+            3.163031234176482
+          ],
+          "expectation_value": -76.35962814558413,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 23,
+          "parameters": [
+            5.679449110862287,
+            3.1623138117234246
+          ],
+          "expectation_value": -76.49040227678881,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 24,
+          "parameters": [
+            5.679336349188161,
+            3.1639682230263917
+          ],
+          "expectation_value": -76.46410911972048,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 25,
+          "parameters": [
+            5.680449279469476,
+            3.16314412674242
+          ],
+          "expectation_value": -76.54097511429197,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 26,
+          "parameters": [
+            5.679966690113163,
+            3.1634285091039493
+          ],
+          "expectation_value": -76.4019529353267,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 27,
+          "parameters": [
+            5.679900604434485,
+            3.1631822720574405
+          ],
+          "expectation_value": -76.44072941896691,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 28,
+          "parameters": [
+            5.680044931718506,
+            3.163146131795752
+          ],
+          "expectation_value": -76.42646497605944,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 29,
+          "parameters": [
+            5.67993404840305,
+            3.1631318178042265
+          ],
+          "expectation_value": -76.49780264496778,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 30,
+          "parameters": [
+            5.67989499164459,
+            3.163262213742193
+          ],
+          "expectation_value": -76.64926228046123,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 31,
+          "parameters": [
+            5.679768284951219,
+            3.163416956799727
+          ],
+          "expectation_value": -76.55937208100111,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 32,
+          "parameters": [
+            5.679979000868711,
+            3.163316458099159
+          ],
+          "expectation_value": -76.50464747204765,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        }
+      ]
+    },
+    {
+      "success": true,
+      "message": "At least one feasible exactly-one state was sampled.",
+      "raw_most_probable_state": {
+        "qiskit_state_label_xn_to_x0": "00110100001011",
+        "bit_string_x0_to_xn": "11010000101100",
+        "probability": 0.00146484375,
+        "feasible": false,
+        "qubo_energy": 52.693039539421754,
+        "weighted_score": null,
+        "selected_alternative_id": null,
+        "provider": null,
+        "payment_instrument": null,
+        "pickup_method": null
+      },
+      "best_feasible_sampled_state": {
+        "qiskit_state_label_xn_to_x0": "00000000010000",
+        "bit_string_x0_to_xn": "00001000000000",
+        "probability": 0.00048828125,
+        "feasible": true,
+        "qubo_energy": 0.30000000000000004,
+        "weighted_score": 0.3,
+        "selected_alternative_id": "alt-5e860c308bdb",
+        "provider": "M-Pesa",
+        "payment_instrument": "Mobile money",
+        "pickup_method": "Mobile wallet"
+      },
+      "feasible_state_probabilities": {
+        "00000000000001": 0.0,
+        "00000000000010": 0.0,
+        "00000000000100": 0.0,
+        "00000000001000": 0.0,
+        "00000000010000": 0.00048828125,
+        "00000000100000": 0.0,
+        "00000001000000": 0.0,
+        "00000010000000": 0.0,
+        "00000100000000": 0.0,
+        "00001000000000": 0.0,
+        "00010000000000": 0.0,
+        "00100000000000": 0.00048828125,
+        "01000000000000": 0.0,
+        "10000000000000": 0.0
+      },
+      "feasible_probability": 0.0009765625,
+      "exact_optimal_bit_strings_x0_to_xn": [
+        "00000000000010"
+      ],
+      "exact_optimal_qiskit_labels_xn_to_x0": [
+        "01000000000000"
+      ],
+      "exact_weighted_score": 0.0012578390325420881,
+      "optimal_state_probability": 0.0,
+      "exact_optimum_sampled": false,
+      "exact_optimum_most_probable": false,
+      "best_feasible_weighted_score": 0.3,
+      "absolute_optimality_gap": 0.2987421609674579,
+      "metrics": {
+        "qubit_count": 14,
+        "qaoa_repetitions": 1,
+        "shots": 2048,
+        "algorithm_seed": 71,
+        "simulator_seed": 71,
+        "transpiler_seed": 71,
+        "optimizer": "COBYLA",
+        "maximum_iterations": 60,
+        "actual_evaluations": 30,
+        "ising_conversion_time_seconds": 0.005763416993431747,
+        "circuit_construction_time_seconds": 0.018507166008930653,
+        "transpilation_time_seconds": 0.00040550000267103314,
+        "optimization_time_seconds": 0.5611767768859863,
+        "optimizer_sampler_time_seconds": 0.2099063760251738,
+        "final_sampling_time_seconds": 0.007208583003375679,
+        "queue_time_seconds": 0.0,
+        "total_execution_time_seconds": 0.6280814999481663,
+        "circuit": {
+          "original_depth": 28,
+          "decomposed_depth": 78,
+          "transpiled_depth": 28,
+          "number_of_parameters": 2
+        }
+      },
+      "optimal_parameters": [
+        1.591363338075931,
+        0.35477145366305957
+      ],
+      "final_expectation_value_without_ising_offset": -0.9263762834236451,
+      "ising_offset": 81.32589835967275,
+      "callback_history": [
+        {
+          "evaluation_number": 1,
+          "parameters": [
+            1.5922450947124074,
+            0.34606321502091186
+          ],
+          "expectation_value": 0.32583770719288857,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 2,
+          "parameters": [
+            2.5922450947124074,
+            0.34606321502091186
+          ],
+          "expectation_value": 29.473495529088236,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 3,
+          "parameters": [
+            1.5922450947124074,
+            1.3460632150209118
+          ],
+          "expectation_value": 1.537946936694199,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 4,
+          "parameters": [
+            0.5931086365131109,
+            0.3045139924413575
+          ],
+          "expectation_value": 47.53874033580788,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 5,
+          "parameters": [
+            2.092081031237808,
+            0.33325553928424745
+          ],
+          "expectation_value": 25.305891434209926,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 6,
+          "parameters": [
+            1.3423185005846698,
+            0.34000536493122036
+          ],
+          "expectation_value": 11.026745846347868,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 7,
+          "parameters": [
+            1.5934566647303456,
+            0.2960778961953644
+          ],
+          "expectation_value": 1.30288008692262,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 8,
+          "parameters": [
+            1.6821808232852407,
+            0.3897846597142619
+          ],
+          "expectation_value": 1.7170230231391015,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 9,
+          "parameters": [
+            1.5129261515032548,
+            0.4069607129020501
+          ],
+          "expectation_value": 1.3303750842898756,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 10,
+          "parameters": [
+            1.5822840118279942,
+            0.2970654923414867
+          ],
+          "expectation_value": 0.40841303826652936,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 11,
+          "parameters": [
+            1.6171945025776886,
+            0.3444735461334252
+          ],
+          "expectation_value": -0.24843461942330922,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 12,
+          "parameters": [
+            1.6667806047234368,
+            0.33805338460964585
+          ],
+          "expectation_value": 0.03122984782920271,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 13,
+          "parameters": [
+            1.6119729715699873,
+            0.3689221782819854
+          ],
+          "expectation_value": -0.6117725504572943,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 14,
+          "parameters": [
+            1.5988458850953509,
+            0.41716821025029777
+          ],
+          "expectation_value": -0.2291991567509068,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 15,
+          "parameters": [
+            1.591363338075931,
+            0.35477145366305957
+          ],
+          "expectation_value": -0.9263762834236451,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 16,
+          "parameters": [
+            1.5755957144132948,
+            0.33537088552618605
+          ],
+          "expectation_value": -0.5518122403115994,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 17,
+          "parameters": [
+            1.588533193152146,
+            0.3588933803618708
+          ],
+          "expectation_value": -0.24020081999708515,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 18,
+          "parameters": [
+            1.5962471951904946,
+            0.34604517497827486
+          ],
+          "expectation_value": -0.09608049692379096,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 19,
+          "parameters": [
+            1.5870001987335387,
+            0.3523295251057778
+          ],
+          "expectation_value": -0.259648161408244,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 20,
+          "parameters": [
+            1.596189500389781,
+            0.3635297729835899
+          ],
+          "expectation_value": -0.7124152733707138,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 21,
+          "parameters": [
+            1.5866069432845245,
+            0.35631311140337696
+          ],
+          "expectation_value": -0.01767159747642114,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 22,
+          "parameters": [
+            1.5909779236408517,
+            0.3535823549652079
+          ],
+          "expectation_value": -0.503559340044946,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 23,
+          "parameters": [
+            1.5931679649599921,
+            0.3565015755689739
+          ],
+          "expectation_value": -0.4349140098745747,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 24,
+          "parameters": [
+            1.5905532598309449,
+            0.3553577754492828
+          ],
+          "expectation_value": -0.0535993848118939,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 25,
+          "parameters": [
+            1.5923633266956478,
+            0.35477622445302903
+          ],
+          "expectation_value": -0.7442766262188395,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 26,
+          "parameters": [
+            1.5911607007172341,
+            0.3552285511371942
+          ],
+          "expectation_value": -0.07599869061256898,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 27,
+          "parameters": [
+            1.5912490637073975,
+            0.3547207943233853
+          ],
+          "expectation_value": -0.8049014289378168,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 28,
+          "parameters": [
+            1.5915646952282112,
+            0.3546232804629671
+          ],
+          "expectation_value": -0.8738215142367369,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 29,
+          "parameters": [
+            1.5913430743400614,
+            0.35481716341047304
+          ],
+          "expectation_value": -0.7159989724629945,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 30,
+          "parameters": [
+            1.5914233991443754,
+            0.3546914995008332
+          ],
+          "expectation_value": -0.8966036970382493,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        }
+      ]
+    },
+    {
+      "success": true,
+      "message": "At least one feasible exactly-one state was sampled.",
+      "raw_most_probable_state": {
+        "qiskit_state_label_xn_to_x0": "00000000000000",
+        "bit_string_x0_to_xn": "00000000000000",
+        "probability": 0.357421875,
+        "feasible": false,
+        "qubo_energy": 2.0,
+        "weighted_score": null,
+        "selected_alternative_id": null,
+        "provider": null,
+        "payment_instrument": null,
+        "pickup_method": null
+      },
+      "best_feasible_sampled_state": {
+        "qiskit_state_label_xn_to_x0": "01000000000000",
+        "bit_string_x0_to_xn": "00000000000010",
+        "probability": 0.0322265625,
+        "feasible": true,
+        "qubo_energy": 0.001257839032542174,
+        "weighted_score": 0.0012578390325420881,
+        "selected_alternative_id": "alt-cc1e0457fb2b",
+        "provider": "Western Union",
+        "payment_instrument": "Cash",
+        "pickup_method": "Cash"
+      },
+      "feasible_state_probabilities": {
+        "00000000000001": 0.03515625,
+        "00000000000010": 0.03125,
+        "00000000000100": 0.0283203125,
+        "00000000001000": 0.03173828125,
+        "00000000010000": 0.0380859375,
+        "00000000100000": 0.03076171875,
+        "00000001000000": 0.04443359375,
+        "00000010000000": 0.03662109375,
+        "00000100000000": 0.03662109375,
+        "00001000000000": 0.02978515625,
+        "00010000000000": 0.03515625,
+        "00100000000000": 0.0322265625,
+        "01000000000000": 0.0322265625,
+        "10000000000000": 0.03369140625
+      },
+      "feasible_probability": 0.47607421875,
+      "exact_optimal_bit_strings_x0_to_xn": [
+        "00000000000010"
+      ],
+      "exact_optimal_qiskit_labels_xn_to_x0": [
+        "01000000000000"
+      ],
+      "exact_weighted_score": 0.0012578390325420881,
+      "optimal_state_probability": 0.0322265625,
+      "exact_optimum_sampled": true,
+      "exact_optimum_most_probable": false,
+      "best_feasible_weighted_score": 0.0012578390325420881,
+      "absolute_optimality_gap": 0.0,
+      "metrics": {
+        "qubit_count": 14,
+        "qaoa_repetitions": 1,
+        "shots": 2048,
+        "algorithm_seed": 97,
+        "simulator_seed": 97,
+        "transpiler_seed": 97,
+        "optimizer": "COBYLA",
+        "maximum_iterations": 60,
+        "actual_evaluations": 29,
+        "ising_conversion_time_seconds": 0.005657457979395986,
+        "circuit_construction_time_seconds": 0.018710958014708012,
+        "transpilation_time_seconds": 0.00043470802484080195,
+        "optimization_time_seconds": 0.3371908664703369,
+        "optimizer_sampler_time_seconds": 0.17683991510421038,
+        "final_sampling_time_seconds": 0.005778209015261382,
+        "queue_time_seconds": 0.0,
+        "total_execution_time_seconds": 0.40279162500519305,
+        "circuit": {
+          "original_depth": 28,
+          "decomposed_depth": 78,
+          "transpiled_depth": 28,
+          "number_of_parameters": 2
+        }
+      },
+      "optimal_parameters": [
+        3.7771725062320467,
+        -0.05469308415393636
+      ],
+      "final_expectation_value_without_ising_offset": -78.52636171885894,
+      "ising_offset": 81.32589835967275,
+      "callback_history": [
+        {
+          "evaluation_number": 1,
+          "parameters": [
+            4.236584755853367,
+            -0.8506019901631701
+          ],
+          "expectation_value": 45.09265678948015,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 2,
+          "parameters": [
+            5.236584755853367,
+            -0.8506019901631701
+          ],
+          "expectation_value": 50.02152176145142,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 3,
+          "parameters": [
+            4.236584755853367,
+            0.14939800983682994
+          ],
+          "expectation_value": 4.816398256343262,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 4,
+          "parameters": [
+            4.115114508491887,
+            1.1419930828680944
+          ],
+          "expectation_value": 34.99134094178215,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 5,
+          "parameters": [
+            3.7849914691263735,
+            -0.06522608802524904
+          ],
+          "expectation_value": -76.72939331077126,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 6,
+          "parameters": [
+            2.831470268660219,
+            -0.36655202494668915
+          ],
+          "expectation_value": 13.661425391445086,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 7,
+          "parameters": [
+            4.146577448768932,
+            -0.41056009927512754
+          ],
+          "expectation_value": 35.57658887595597,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 8,
+          "parameters": [
+            3.871324971938843,
+            0.0251704068853906
+          ],
+          "expectation_value": 126.5868116862616,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 9,
+          "parameters": [
+            3.5892161252205295,
+            -0.22069960576556527
+          ],
+          "expectation_value": 48.90548585625657,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 10,
+          "parameters": [
+            3.75389676557831,
+            -0.0260710192440802
+          ],
+          "expectation_value": -67.07530796942423,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 11,
+          "parameters": [
+            3.8803960620751217,
+            -0.03526004650682872
+          ],
+          "expectation_value": -74.16009781479737,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 12,
+          "parameters": [
+            3.803516898132296,
+            -0.16349514968835088
+          ],
+          "expectation_value": 108.13863541814013,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 13,
+          "parameters": [
+            3.7693526525945136,
+            -0.017734747577933613
+          ],
+          "expectation_value": -53.818029606084416,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 14,
+          "parameters": [
+            3.7731186340145446,
+            -0.06913579215821408
+          ],
+          "expectation_value": -75.52804745943696,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 15,
+          "parameters": [
+            3.797518675840476,
+            -0.08686099250717674
+          ],
+          "expectation_value": -61.32302803654083,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 16,
+          "parameters": [
+            3.783287028455668,
+            -0.055372414497064495
+          ],
+          "expectation_value": -78.39593188528832,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 17,
+          "parameters": [
+            3.7856551589522716,
+            -0.04565686212208052
+          ],
+          "expectation_value": -78.1806036644856,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 18,
+          "parameters": [
+            3.7783798918428833,
+            -0.05441324284221585
+          ],
+          "expectation_value": -78.44851966976212,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 19,
+          "parameters": [
+            3.7768550165256283,
+            -0.05639434235178784
+          ],
+          "expectation_value": -78.22927069973704,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 20,
+          "parameters": [
+            3.777983671940969,
+            -0.054108267778764846
+          ],
+          "expectation_value": -78.49088369696298,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 21,
+          "parameters": [
+            3.7778717383021423,
+            -0.05311455209482953
+          ],
+          "expectation_value": -78.34566448975879,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 22,
+          "parameters": [
+            3.7771725062320467,
+            -0.05469308415393636
+          ],
+          "expectation_value": -78.52636171885894,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 23,
+          "parameters": [
+            3.77676853547549,
+            -0.05560785605329
+          ],
+          "expectation_value": -78.28408992482116,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 24,
+          "parameters": [
+            3.7769753491523637,
+            -0.054233596302159036
+          ],
+          "expectation_value": -78.51966404541497,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 25,
+          "parameters": [
+            3.7770576342691022,
+            -0.054742373423857064
+          ],
+          "expectation_value": -78.33644460148129,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 26,
+          "parameters": [
+            3.777403110320466,
+            -0.05459653492087777
+          ],
+          "expectation_value": -78.42089749783685,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 27,
+          "parameters": [
+            3.77708190597433,
+            -0.054735411370968545
+          ],
+          "expectation_value": -78.32012894338102,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 28,
+          "parameters": [
+            3.7771936698405626,
+            -0.05473838428279465
+          ],
+          "expectation_value": -78.45007154712764,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 29,
+          "parameters": [
+            3.777220165256726,
+            -0.054605171598708896
+          ],
+          "expectation_value": -78.29392387297355,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        }
+      ]
+    }
+  ],
+  "aggregate": {
+    "run_count": 5,
+    "successful_feasible_run_count": 5,
+    "exact_optimum_recovery_count": 3,
+    "exact_optimum_recovery_rate": 0.6,
+    "optimal_state_probability": {
+      "mean": 0.0234375,
+      "standard_deviation": 0.02308284732385006
+    },
+    "feasible_probability": {
+      "mean": 0.23232421875,
+      "standard_deviation": 0.1964341328812053
+    },
+    "best_feasible_gap": {
+      "mean": 0.11949686438698318,
+      "standard_deviation": 0.14635317180533386
+    },
+    "runtime_seconds": {
+      "mean": 0.5220831999904476,
+      "standard_deviation": 0.1096202682388699
+    }
+  }
+}
