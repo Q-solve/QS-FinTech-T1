@@ -1,0 +1,8 @@
+pandas>=2.0
+numpy>=1.24
+streamlit>=1.32
+scipy>=1.10
+qiskit>=1.0
+qiskit-aer>=0.15
+qbraid>=0.12
+pytest>=7.0
