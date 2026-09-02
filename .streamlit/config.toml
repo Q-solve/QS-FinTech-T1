@@ -1,0 +1,7 @@
+[server]
+port = 8503
+headless = true
+
+[browser]
+serverAddress = "qkash"
+serverPort = 8503

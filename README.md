@@ -45,6 +45,13 @@ pip install -r requirements.txt
 python -m streamlit run app.py
 ```
 
+The project Streamlit config advertises the app at `http://qkash:8503`. Add this local host
+alias once if the name does not resolve on your machine:
+
+```bash
+127.0.0.1 qkash
+```
+
 This repository intentionally keeps no project-local virtual environment under version control.
 `.vscode/settings.json` pins the interpreter path; adjust it to your own environment.
 

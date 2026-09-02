@@ -176,6 +176,35 @@ def solution_frame(results: list[dict[str, object]], candidates: pd.DataFrame) -
     return pd.DataFrame(rows)
 
 
+def feasible_solution_frame(candidates: pd.DataFrame) -> pd.DataFrame:
+    """Return every one-hot feasible service solution ranked by weighted score."""
+
+    ranked = candidates.copy().reset_index(drop=True)
+    ranked = ranked.sort_values(
+        "weighted_score",
+        ascending=True,
+        kind="mergesort",
+    ).reset_index(drop=True)
+
+    rows: list[dict[str, object]] = []
+    for rank, (_index, row) in enumerate(ranked.iterrows(), start=1):
+        rows.append(
+            {
+                "rank": rank,
+                "service_provider": row["firm"],
+                "payment_method": row["payment instrument"],
+                "receiving_method": row["pickup method"],
+                "settlement_time": row["speed actual"],
+                "transaction_fee": fee_text(row),
+                "fx_spread": f"{float(row['fx_margin']):.2f}%",
+                "service_profile": row.get("service_profile_label", ""),
+                "overall_performance": performance_score(row),
+                "weighted_score": float(row["weighted_score"]),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
 def performance_score(row: pd.Series) -> float:
     """Convert the lower-is-better objective score into a 0-100 performance score."""
 
@@ -206,6 +235,7 @@ def fee_text(row: pd.Series) -> str:
 
 def render_consumer_recommendation(
     recommendation: pd.Series,
+    model_candidates: pd.DataFrame,
     inference: object,
     amount_match: object,
 ) -> None:
@@ -233,6 +263,20 @@ def render_consumer_recommendation(
         f"{amount_match.amount_tier.upper()} historical denomination "
         f"{float(amount_match.matched_denomination):,.2f}. Internal use-case profile: "
         f"{inference.profile_label}."
+    )
+
+    st.subheader("Available Feasible Solutions")
+    st.caption("Every row is a valid one-service solution in the verified optimization model.")
+    feasible = feasible_solution_frame(model_candidates)
+    st.dataframe(
+        feasible.style.format(
+            {
+                "overall_performance": "{:.1f}%",
+                "weighted_score": "{:.6f}",
+            }
+        ),
+        width="stretch",
+        hide_index=True,
     )
 
 
@@ -744,7 +788,12 @@ def main() -> None:
     recommendation = model_candidates.iloc[int(exact["index"])]
     consumer_tab, research_tab = st.tabs(["Consumer recommendation", "Research dashboard"])
     with consumer_tab:
-        render_consumer_recommendation(recommendation, inference, amount_match)
+        render_consumer_recommendation(
+            recommendation,
+            model_candidates,
+            inference,
+            amount_match,
+        )
     with research_tab:
         render_research_dashboard(
             metrics=metrics,
