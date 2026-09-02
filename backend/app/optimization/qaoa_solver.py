@@ -16,11 +16,18 @@ from qiskit_algorithms import QAOA
 from qiskit_algorithms.optimizers import COBYLA
 
 from .classical_solver import is_exactly_one
+from .constraint_mixer import (
+    CONSTRAINT_TOLERANCE,
+    build_xy_ring_mixer_circuit,
+    validate_constraint_preserving_design,
+)
+from .initial_states import build_uniform_one_hot_state
 from .objective import SCORE_TIE_TOLERANCE
 from .qaoa_models import (
     CircuitMetrics,
     QaoaCallbackRecord,
     QaoaConfig,
+    QaoaMixer,
     QaoaRunMetrics,
     QaoaRunResult,
     SampledState,
@@ -182,6 +189,25 @@ def interpret_sample_distribution(
     feasible_probability = validate_probability(
         sum(feasible_probabilities.values()), "feasible probability"
     )
+    hamming_distribution = {
+        str(weight): validate_probability(
+            sum(
+                state.probability
+                for state in sampled.values()
+                if state.bit_string_x0_to_xn.count("1") == weight
+            ),
+            f"Hamming-weight-{weight} probability",
+        )
+        for weight in range(len(model.alternatives) + 1)
+    }
+    leakage_probability = validate_probability(
+        sum(
+            probability
+            for weight, probability in hamming_distribution.items()
+            if weight != "1"
+        ),
+        "constraint leakage probability",
+    )
     optimal_probability = validate_probability(
         sum(sampled[label].probability for label in exact_labels if label in sampled),
         "optimal-state probability",
@@ -203,6 +229,8 @@ def interpret_sample_distribution(
         "best_feasible": best_feasible,
         "feasible_state_probabilities": feasible_probabilities,
         "feasible_probability": feasible_probability,
+        "hamming_weight_distribution": hamming_distribution,
+        "leakage_probability": leakage_probability,
         "exact_states": exact_states,
         "exact_labels": exact_labels,
         "exact_score": exact_score,
@@ -217,7 +245,8 @@ def interpret_sample_distribution(
 def _deterministic_initial_point(ansatz: QAOAAnsatz, seed: int) -> np.ndarray:
     random = np.random.default_rng(seed)
     values = []
-    for lower, upper in ansatz.parameter_bounds:
+    bounds = ansatz.parameter_bounds or [(None, None)] * ansatz.num_parameters
+    for lower, upper in bounds:
         lower_bound = -2.0 * pi if lower is None else lower
         upper_bound = 2.0 * pi if upper is None else upper
         values.append(random.uniform(lower_bound, upper_bound))
@@ -225,14 +254,35 @@ def _deterministic_initial_point(ansatz: QAOAAnsatz, seed: int) -> np.ndarray:
 
 
 def run_qaoa(model: QuboModel, config: QaoaConfig) -> QaoaRunResult:
-    """Run standard-X-mixer QAOA against ``model.qubo_problem.to_ising()``."""
+    """Run the configured QAOA variant against ``model.qubo_problem.to_ising()``."""
 
+    design_validation = (
+        validate_constraint_preserving_design(len(model.alternatives))
+        if config.mixer is QaoaMixer.CONSTRAINT_PRESERVING_XY
+        else None
+    )
     total_started = perf_counter()
     ising_started = perf_counter()
     operator, ising_offset = to_ising(model)
     ising_elapsed = perf_counter() - ising_started
     circuit_started = perf_counter()
-    original_ansatz = QAOAAnsatz(operator, reps=config.reps, flatten=True)
+    if config.mixer is QaoaMixer.CONSTRAINT_PRESERVING_XY:
+        mixer = build_xy_ring_mixer_circuit(operator.num_qubits)
+        initial_state = build_uniform_one_hot_state(operator.num_qubits)
+        initial_state_type = "uniform_one_hot_w_state"
+        connectivity = design_validation.connectivity if design_validation else ()
+    else:
+        mixer = None
+        initial_state = None
+        initial_state_type = "uniform_plus_state"
+        connectivity = ()
+    original_ansatz = QAOAAnsatz(
+        operator,
+        reps=config.reps,
+        initial_state=initial_state,
+        mixer_operator=mixer,
+        flatten=True,
+    )
     original_depth = original_ansatz.depth()
     decomposed_depth = original_ansatz.decompose(reps=10).depth()
     circuit_elapsed = perf_counter() - circuit_started
@@ -277,6 +327,8 @@ def run_qaoa(model: QuboModel, config: QaoaConfig) -> QaoaRunResult:
         sampler=sampler,
         optimizer=COBYLA(maxiter=config.max_iterations),
         reps=config.reps,
+        initial_state=initial_state,
+        mixer=mixer,
         initial_point=_deterministic_initial_point(
             original_ansatz, config.algorithm_seed
         ),
@@ -293,6 +345,13 @@ def run_qaoa(model: QuboModel, config: QaoaConfig) -> QaoaRunResult:
         str(label): float(value) for label, value in result.eigenstate.items()
     }
     interpreted = interpret_sample_distribution(model, probabilities)
+    if (
+        config.mixer is QaoaMixer.CONSTRAINT_PRESERVING_XY
+        and interpreted["leakage_probability"] > CONSTRAINT_TOLERANCE
+    ):
+        raise AssertionError(
+            "Noiseless constraint-preserving QAOA leaked outside Hamming weight one."
+        )
     best_feasible = interpreted["best_feasible"]
     success = best_feasible is not None
     message = (
@@ -319,6 +378,9 @@ def run_qaoa(model: QuboModel, config: QaoaConfig) -> QaoaRunResult:
         queue_time_seconds=0.0,
         total_execution_time_seconds=total_elapsed,
         circuit=circuit_metrics,
+        mixer_type=config.mixer.value,
+        initial_state_type=initial_state_type,
+        mixer_connectivity=connectivity,
     )
     return QaoaRunResult(
         success=success,
@@ -342,4 +404,6 @@ def run_qaoa(model: QuboModel, config: QaoaConfig) -> QaoaRunResult:
         final_expectation_value_without_ising_offset=float(result.eigenvalue),
         ising_offset=float(ising_offset),
         callback_history=tuple(callback_history),
+        hamming_weight_distribution=interpreted["hamming_weight_distribution"],
+        constraint_leakage_probability=interpreted["leakage_probability"],
     )

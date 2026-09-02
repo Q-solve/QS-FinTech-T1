@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from enum import Enum
 from math import isfinite
 from numbers import Integral
 from typing import Any
@@ -12,6 +13,11 @@ def _positive_integer(value: int, name: str) -> int:
     if isinstance(value, bool) or not isinstance(value, Integral) or value < 1:
         raise ValueError(f"{name} must be a positive integer.")
     return int(value)
+
+
+class QaoaMixer(str, Enum):
+    STANDARD_X = "standard_x"
+    CONSTRAINT_PRESERVING_XY = "constraint_preserving_xy"
 
 
 @dataclass(frozen=True)
@@ -26,6 +32,7 @@ class QaoaConfig:
     transpiler_seed: int | None = None
     optimizer: str = "COBYLA"
     transpiler_optimization_level: int = 1
+    mixer: QaoaMixer = QaoaMixer.STANDARD_X
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "reps", _positive_integer(self.reps, "reps"))
@@ -47,6 +54,11 @@ class QaoaConfig:
             raise ValueError("Only the COBYLA optimizer is currently supported.")
         if self.transpiler_optimization_level not in (0, 1, 2, 3):
             raise ValueError("transpiler_optimization_level must be 0, 1, 2, or 3.")
+        try:
+            object.__setattr__(self, "mixer", QaoaMixer(self.mixer))
+        except ValueError as exc:
+            choices = ", ".join(item.value for item in QaoaMixer)
+            raise ValueError(f"mixer must be one of: {choices}.") from exc
 
     @property
     def resolved_simulator_seed(self) -> int:
@@ -115,6 +127,9 @@ class QaoaRunMetrics:
     queue_time_seconds: float
     total_execution_time_seconds: float
     circuit: CircuitMetrics
+    mixer_type: str
+    initial_state_type: str
+    mixer_connectivity: tuple[tuple[int, int], ...]
 
 
 @dataclass(frozen=True)
@@ -138,6 +153,8 @@ class QaoaRunResult:
     final_expectation_value_without_ising_offset: float
     ising_offset: float
     callback_history: tuple[QaoaCallbackRecord, ...]
+    hamming_weight_distribution: dict[str, float]
+    constraint_leakage_probability: float
 
 
 @dataclass(frozen=True)
@@ -150,12 +167,15 @@ class DistributionSummary:
 class QaoaAggregate:
     run_count: int
     successful_feasible_run_count: int
+    modal_state_feasibility_count: int
+    modal_state_feasibility_rate: float
     exact_optimum_recovery_count: int
     exact_optimum_recovery_rate: float
     optimal_state_probability: DistributionSummary
     feasible_probability: DistributionSummary
     best_feasible_gap: DistributionSummary
     runtime_seconds: DistributionSummary
+    constraint_leakage_probability: DistributionSummary
 
 
 @dataclass(frozen=True)

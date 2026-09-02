@@ -1,0 +1,3358 @@
+{
+  "schema_version": "2.0",
+  "generated_at_utc": "2026-09-02T08:26:57.162102+00:00",
+  "package_versions": {
+    "python": "3.11.16",
+    "qiskit": "2.5.2",
+    "qiskit-aer": "0.17.2",
+    "qiskit-algorithms": "0.4.0",
+    "qiskit-optimization": "0.7.0",
+    "scipy": "1.17.1",
+    "numpy": "2.4.6"
+  },
+  "experiment_configuration": {
+    "period": "2025_3Q",
+    "corridor": "KENTZA",
+    "benchmark": "CC2",
+    "benchmark_amount": 45000.0,
+    "benchmark_currency": "KES",
+    "weights": {
+      "fee_weight": 0.4,
+      "fx_weight": 0.3,
+      "speed_weight": 0.3
+    },
+    "penalty": 2.0,
+    "minimum_safe_penalty_condition": "P > 0.0012578390325420881",
+    "reps": 1,
+    "shots": 2048,
+    "optimizer": "COBYLA",
+    "maximum_iterations": 60,
+    "seeds": [
+      11,
+      29,
+      47,
+      71,
+      97
+    ],
+    "qubit_count": 14,
+    "mixer": "constraint_preserving_xy",
+    "initial_state": "uniform_one_hot_w_state",
+    "mixer_connectivity": [
+      [
+        0,
+        1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        3,
+        4
+      ],
+      [
+        4,
+        5
+      ],
+      [
+        5,
+        6
+      ],
+      [
+        6,
+        7
+      ],
+      [
+        7,
+        8
+      ],
+      [
+        8,
+        9
+      ],
+      [
+        9,
+        10
+      ],
+      [
+        10,
+        11
+      ],
+      [
+        11,
+        12
+      ],
+      [
+        12,
+        13
+      ],
+      [
+        13,
+        0
+      ]
+    ],
+    "constraint_preservation_validation": {
+      "qubit_count": 14,
+      "connectivity": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          5,
+          6
+        ],
+        [
+          6,
+          7
+        ],
+        [
+          7,
+          8
+        ],
+        [
+          8,
+          9
+        ],
+        [
+          9,
+          10
+        ],
+        [
+          10,
+          11
+        ],
+        [
+          11,
+          12
+        ],
+        [
+          12,
+          13
+        ],
+        [
+          13,
+          0
+        ]
+      ],
+      "mixer_hermiticity_error": 0.0,
+      "number_commutator_error": 0.0,
+      "mixer_leakage_by_angle": {
+        "0": 0,
+        "0.17": 0,
+        "0.63": 0,
+        "1.2": 0
+      },
+      "maximum_mixer_leakage": 0,
+      "initial_state_validation": {
+        "qubit_count": 14,
+        "norm": 0.9999999999999999,
+        "expected_one_hot_probability": 0.07142857142857142,
+        "one_hot_probabilities_by_qiskit_label": {
+          "00000000000001": 0.07142857142857147,
+          "00000000000010": 0.07142857142857152,
+          "00000000000100": 0.07142857142857147,
+          "00000000001000": 0.07142857142857141,
+          "00000000010000": 0.07142857142857141,
+          "00000000100000": 0.07142857142857137,
+          "00000001000000": 0.07142857142857141,
+          "00000010000000": 0.07142857142857137,
+          "00000100000000": 0.07142857142857147,
+          "00001000000000": 0.07142857142857144,
+          "00010000000000": 0.07142857142857141,
+          "00100000000000": 0.07142857142857137,
+          "01000000000000": 0.07142857142857137,
+          "10000000000000": 0.07142857142857137
+        },
+        "maximum_probability_error": 9.71445146547012e-17,
+        "infeasible_probability": 0
+      }
+    },
+    "simulator": "qiskit-aer SamplerV2 (local, noiseless finite-shot)",
+    "runtime_interpretation": "Experimental implementation timing only; not evidence of quantum speedup.",
+    "provenance": {
+      "raw_dataset_sha256_from_audit": "7d3b394c0db9a8c4227cccd52bb73e09c026f3f1a74de6befdee8b6477ab1ce4",
+      "processed_dataset_path": "data/processed/remittance_east_africa_clean.csv",
+      "processed_dataset_sha256": "0b8f69c8c516fa9ea38951c80724f701ff2b16f2064e37ec3cc66c3b243fac90",
+      "data_audit": "docs/data_audit.md",
+      "normalization": {
+        "method": "min-max within the eligible comparison set",
+        "direction": "lower is better for fee, FX margin, and speed ordinal",
+        "constant_feature_treatment": "all normalized values are zero",
+        "bounds": {
+          "fee_percentage": {
+            "minimum": 1.1111111111111112,
+            "maximum": 13.478000000000002
+          },
+          "fx_margin": {
+            "minimum": -0.69,
+            "maximum": 8.64
+          },
+          "speed_ordinal": {
+            "minimum": 0,
+            "maximum": 3
+          }
+        }
+      },
+      "objective_inputs_in_variable_order": [
+        {
+          "variable": "x_0",
+          "alternative_id": "alt-16a0d6dbadda",
+          "provider": "United Bank for Africa (UBA)",
+          "payment_instrument": "Bank account transfer",
+          "pickup_method": "Bank account",
+          "fee_percentage": 6.772222222222222,
+          "fx_margin": 3.1,
+          "speed_ordinal": 3,
+          "normalized": {
+            "fee": 0.45776356220014014,
+            "fx": 0.4062165058949625,
+            "speed": 1.0
+          },
+          "weighted_score": 0.6049703766485448
+        },
+        {
+          "variable": "x_1",
+          "alternative_id": "alt-20844375cc3e",
+          "provider": "M-Pesa",
+          "payment_instrument": "Mobile money",
+          "pickup_method": "Cash",
+          "fee_percentage": 1.1111111111111112,
+          "fx_margin": 8.64,
+          "speed_ordinal": 0,
+          "normalized": {
+            "fee": 0.0,
+            "fx": 1.0,
+            "speed": 0.0
+          },
+          "weighted_score": 0.3
+        },
+        {
+          "variable": "x_2",
+          "alternative_id": "alt-29fa0176acdd",
+          "provider": "ABC Bank",
+          "payment_instrument": "Bank account transfer",
+          "pickup_method": "Bank account",
+          "fee_percentage": 4.0,
+          "fx_margin": 1.81,
+          "speed_ordinal": 3,
+          "normalized": {
+            "fee": 0.2335986774721029,
+            "fx": 0.2679528403001072,
+            "speed": 1.0
+          },
+          "weighted_score": 0.4738253230788733
+        },
+        {
+          "variable": "x_3",
+          "alternative_id": "alt-503fc0f80db8",
+          "provider": "KCB Bank",
+          "payment_instrument": "Bank account transfer",
+          "pickup_method": "Bank account",
+          "fee_percentage": 5.333333333333334,
+          "fx_margin": 1.81,
+          "speed_ordinal": 3,
+          "normalized": {
+            "fee": 0.3414134516899966,
+            "fx": 0.2679528403001072,
+            "speed": 1.0
+          },
+          "weighted_score": 0.5169512327660308
+        },
+        {
+          "variable": "x_4",
+          "alternative_id": "alt-5e860c308bdb",
+          "provider": "M-Pesa",
+          "payment_instrument": "Mobile money",
+          "pickup_method": "Mobile wallet",
+          "fee_percentage": 1.1111111111111112,
+          "fx_margin": 8.64,
+          "speed_ordinal": 0,
+          "normalized": {
+            "fee": 0.0,
+            "fx": 1.0,
+            "speed": 0.0
+          },
+          "weighted_score": 0.3
+        },
+        {
+          "variable": "x_5",
+          "alternative_id": "alt-60f5f9067629",
+          "provider": "EcoBank Rapid Transfer",
+          "payment_instrument": "Bank account transfer",
+          "pickup_method": "Cash",
+          "fee_percentage": 2.811111111111111,
+          "fx_margin": 1.81,
+          "speed_ordinal": 0,
+          "normalized": {
+            "fee": 0.13746383712781438,
+            "fx": 0.2679528403001072,
+            "speed": 0.0
+          },
+          "weighted_score": 0.1353713869411579
+        },
+        {
+          "variable": "x_6",
+          "alternative_id": "alt-9243c33ae323",
+          "provider": "UBA Africash",
+          "payment_instrument": "Cash",
+          "pickup_method": "Cash",
+          "fee_percentage": 2.493333333333333,
+          "fx_margin": 3.14,
+          "speed_ordinal": 0,
+          "normalized": {
+            "fee": 0.11176798260588305,
+            "fx": 0.4105037513397642,
+            "speed": 0.0
+          },
+          "weighted_score": 0.16785831844428248
+        },
+        {
+          "variable": "x_7",
+          "alternative_id": "alt-92a686bc27e8",
+          "provider": "EcoBank Rapid Transfer",
+          "payment_instrument": "Cash",
+          "pickup_method": "Cash",
+          "fee_percentage": 2.811111111111111,
+          "fx_margin": 1.81,
+          "speed_ordinal": 0,
+          "normalized": {
+            "fee": 0.13746383712781438,
+            "fx": 0.2679528403001072,
+            "speed": 0.0
+          },
+          "weighted_score": 0.1353713869411579
+        },
+        {
+          "variable": "x_8",
+          "alternative_id": "alt-9b44600ea942",
+          "provider": "GT Bank",
+          "payment_instrument": "Bank account transfer",
+          "pickup_method": "Bank account",
+          "fee_percentage": 6.550000000000001,
+          "fx_margin": 1.81,
+          "speed_ordinal": 2,
+          "normalized": {
+            "fee": 0.43979443316382455,
+            "fx": 0.2679528403001072,
+            "speed": 0.6666666666666666
+          },
+          "weighted_score": 0.4563036253555619
+        },
+        {
+          "variable": "x_9",
+          "alternative_id": "alt-a95dd80e8eea",
+          "provider": "Ecobank",
+          "payment_instrument": "Cash",
+          "pickup_method": "Cash",
+          "fee_percentage": 13.478000000000002,
+          "fx_margin": 1.81,
+          "speed_ordinal": 1,
+          "normalized": {
+            "fee": 1.0,
+            "fx": 0.2679528403001072,
+            "speed": 0.3333333333333333
+          },
+          "weighted_score": 0.5803858520900321
+        },
+        {
+          "variable": "x_10",
+          "alternative_id": "alt-ac5be959dbde",
+          "provider": "MoneyGram",
+          "payment_instrument": "Cash",
+          "pickup_method": "Cash",
+          "fee_percentage": 1.2222222222222223,
+          "fx_margin": 4.32,
+          "speed_ordinal": 0,
+          "normalized": {
+            "fee": 0.008984564518157807,
+            "fx": 0.5369774919614148,
+            "speed": 0.0
+          },
+          "weighted_score": 0.16468707339568753
+        },
+        {
+          "variable": "x_11",
+          "alternative_id": "alt-c77e722fb62f",
+          "provider": "Development Bank of Kenya",
+          "payment_instrument": "Bank account transfer",
+          "pickup_method": "Bank account",
+          "fee_percentage": 5.633333333333333,
+          "fx_margin": 5.65,
+          "speed_ordinal": 3,
+          "normalized": {
+            "fee": 0.3656717758890226,
+            "fx": 0.6795284030010718,
+            "speed": 1.0
+          },
+          "weighted_score": 0.6501272312559305
+        },
+        {
+          "variable": "x_12",
+          "alternative_id": "alt-cc1e0457fb2b",
+          "provider": "Western Union",
+          "payment_instrument": "Cash",
+          "pickup_method": "Cash",
+          "fee_percentage": 1.15,
+          "fx_margin": -0.69,
+          "speed_ordinal": 0,
+          "normalized": {
+            "fee": 0.00314459758135522,
+            "fx": 0.0,
+            "speed": 0.0
+          },
+          "weighted_score": 0.0012578390325420881
+        },
+        {
+          "variable": "x_13",
+          "alternative_id": "alt-f5f6dbf518bd",
+          "provider": "MoneyGram",
+          "payment_instrument": "Cash",
+          "pickup_method": "Mobile wallet",
+          "fee_percentage": 1.2222222222222223,
+          "fx_margin": 4.32,
+          "speed_ordinal": 0,
+          "normalized": {
+            "fee": 0.008984564518157807,
+            "fx": 0.5369774919614148,
+            "speed": 0.0
+          },
+          "weighted_score": 0.16468707339568753
+        }
+      ]
+    }
+  },
+  "exact_reference": {
+    "classical_solver": "direct_weighted_argmin",
+    "classical_runtime_seconds": 4.633399657905102e-05,
+    "bit_string_x0_to_xn": "00000000000010",
+    "qiskit_state_label_xn_to_x0": "01000000000000",
+    "qubo_energy": 0.001257839032542174,
+    "weighted_score": 0.0012578390325420881,
+    "feasible": true,
+    "alternative_id": "alt-cc1e0457fb2b",
+    "provider": "Western Union",
+    "payment_instrument": "Cash",
+    "pickup_method": "Cash",
+    "mathematical_optimization": {
+      "solver": "qiskit_scipy_milp_highs",
+      "runtime_seconds": 0.001239667006302625,
+      "success": true,
+      "status": "SUCCESS",
+      "message": "Optimization terminated successfully. (HiGHS Status 7: Optimal)",
+      "feasible": true,
+      "bit_string_x0_to_xn": "00000000000010",
+      "weighted_score": 0.0012578390325420881,
+      "alternative_id": "alt-cc1e0457fb2b",
+      "mip_gap": 0.0,
+      "mip_dual_bound": 0.0012578390325420881,
+      "mip_node_count": 0
+    }
+  },
+  "runs": [
+    {
+      "success": true,
+      "message": "At least one feasible exactly-one state was sampled.",
+      "raw_most_probable_state": {
+        "qiskit_state_label_xn_to_x0": "00010000000000",
+        "bit_string_x0_to_xn": "00000000001000",
+        "probability": 0.13330078125,
+        "feasible": true,
+        "qubo_energy": 0.16468707339568756,
+        "weighted_score": 0.16468707339568753,
+        "selected_alternative_id": "alt-ac5be959dbde",
+        "provider": "MoneyGram",
+        "payment_instrument": "Cash",
+        "pickup_method": "Cash"
+      },
+      "best_feasible_sampled_state": {
+        "qiskit_state_label_xn_to_x0": "01000000000000",
+        "bit_string_x0_to_xn": "00000000000010",
+        "probability": 0.09521484375,
+        "feasible": true,
+        "qubo_energy": 0.001257839032542174,
+        "weighted_score": 0.0012578390325420881,
+        "selected_alternative_id": "alt-cc1e0457fb2b",
+        "provider": "Western Union",
+        "payment_instrument": "Cash",
+        "pickup_method": "Cash"
+      },
+      "feasible_state_probabilities": {
+        "00000000000001": 0.02392578125,
+        "00000000000010": 0.13232421875,
+        "00000000000100": 0.08203125,
+        "00000000001000": 0.046875,
+        "00000000010000": 0.068359375,
+        "00000000100000": 0.09326171875,
+        "00000001000000": 0.07275390625,
+        "00000010000000": 0.0791015625,
+        "00000100000000": 0.05419921875,
+        "00001000000000": 0.041015625,
+        "00010000000000": 0.13330078125,
+        "00100000000000": 0.015625,
+        "01000000000000": 0.09521484375,
+        "10000000000000": 0.06201171875
+      },
+      "feasible_probability": 1.0,
+      "exact_optimal_bit_strings_x0_to_xn": [
+        "00000000000010"
+      ],
+      "exact_optimal_qiskit_labels_xn_to_x0": [
+        "01000000000000"
+      ],
+      "exact_weighted_score": 0.0012578390325420881,
+      "optimal_state_probability": 0.09521484375,
+      "exact_optimum_sampled": true,
+      "exact_optimum_most_probable": false,
+      "best_feasible_weighted_score": 0.0012578390325420881,
+      "absolute_optimality_gap": 0.0,
+      "metrics": {
+        "qubit_count": 14,
+        "qaoa_repetitions": 1,
+        "shots": 2048,
+        "algorithm_seed": 11,
+        "simulator_seed": 11,
+        "transpiler_seed": 11,
+        "optimizer": "COBYLA",
+        "maximum_iterations": 60,
+        "actual_evaluations": 45,
+        "ising_conversion_time_seconds": 0.005785125016700476,
+        "circuit_construction_time_seconds": 0.05847887496929616,
+        "transpilation_time_seconds": 0.0013655420043505728,
+        "optimization_time_seconds": 0.49582505226135254,
+        "optimizer_sampler_time_seconds": 0.3705175395007245,
+        "final_sampling_time_seconds": 0.008238583046477288,
+        "queue_time_seconds": 0.0,
+        "total_execution_time_seconds": 0.6032689589774236,
+        "circuit": {
+          "original_depth": 32,
+          "decomposed_depth": 283,
+          "transpiled_depth": 72,
+          "number_of_parameters": 2
+        },
+        "mixer_type": "constraint_preserving_xy",
+        "initial_state_type": "uniform_one_hot_w_state",
+        "mixer_connectivity": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            4,
+            5
+          ],
+          [
+            5,
+            6
+          ],
+          [
+            6,
+            7
+          ],
+          [
+            7,
+            8
+          ],
+          [
+            8,
+            9
+          ],
+          [
+            9,
+            10
+          ],
+          [
+            10,
+            11
+          ],
+          [
+            11,
+            12
+          ],
+          [
+            12,
+            13
+          ],
+          [
+            13,
+            0
+          ]
+        ]
+      },
+      "optimal_parameters": [
+        -3.398387110997409,
+        1.358015439041762
+      ],
+      "final_expectation_value_without_ising_offset": -81.06159327985009,
+      "ising_offset": 81.32589835967275,
+      "callback_history": [
+        {
+          "evaluation_number": 1,
+          "parameters": [
+            -4.667524489218516,
+            -0.009074648212064388
+          ],
+          "expectation_value": -80.98944724518053,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 2,
+          "parameters": [
+            -3.6675244892185157,
+            -0.009074648212064388
+          ],
+          "expectation_value": -81.0036855797132,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 3,
+          "parameters": [
+            -3.6675244892185157,
+            0.9909253517879356
+          ],
+          "expectation_value": -81.01098576237763,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 4,
+          "parameters": [
+            -2.7776682711015312,
+            1.4471664186358661
+          ],
+          "expectation_value": -80.92984779446408,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 5,
+          "parameters": [
+            -4.166052396481558,
+            1.0292649615920457
+          ],
+          "expectation_value": -80.99440592413846,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 6,
+          "parameters": [
+            -3.4231529951647333,
+            1.043675450308433
+          ],
+          "expectation_value": -81.04353213475459,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 7,
+          "parameters": [
+            -2.9239204289917846,
+            1.0713674143480718
+          ],
+          "expectation_value": -80.92973108093834,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 8,
+          "parameters": [
+            -3.430075986174643,
+            1.16848359185167
+          ],
+          "expectation_value": -81.04910258194553,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 9,
+          "parameters": [
+            -3.677701403604603,
+            1.2028587666532324
+          ],
+          "expectation_value": -81.01216328806058,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 10,
+          "parameters": [
+            -3.380152729557348,
+            1.171252788255634
+          ],
+          "expectation_value": -81.05203668936636,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 11,
+          "parameters": [
+            -3.303985491126775,
+            1.2360490210925843
+          ],
+          "expectation_value": -81.05028066162264,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 12,
+          "parameters": [
+            -3.416708822106208,
+            1.2053651334925009
+          ],
+          "expectation_value": -81.05221080506612,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 13,
+          "parameters": [
+            -3.437040575602306,
+            1.1908179757022688
+          ],
+          "expectation_value": -81.04950934609415,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 14,
+          "parameters": [
+            -3.4196182536642543,
+            1.2094314841917204
+          ],
+          "expectation_value": -81.0517678432202,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 15,
+          "parameters": [
+            -3.406730387452236,
+            1.2047087480444452
+          ],
+          "expectation_value": -81.05323475056723,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 16,
+          "parameters": [
+            -3.387985732432732,
+            1.1977346597026064
+          ],
+          "expectation_value": -81.05348294915076,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 17,
+          "parameters": [
+            -3.3802813762470176,
+            1.2161911733431519
+          ],
+          "expectation_value": -81.05392154100578,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 18,
+          "parameters": [
+            -3.3725707776750244,
+            1.2225588000330245
+          ],
+          "expectation_value": -81.0540888407918,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 19,
+          "parameters": [
+            -3.371175111907529,
+            1.2324609269290727
+          ],
+          "expectation_value": -81.05509204405581,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 20,
+          "parameters": [
+            -3.381844361638258,
+            1.2493774014489996
+          ],
+          "expectation_value": -81.05524743049726,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 21,
+          "parameters": [
+            -3.374054459269041,
+            1.2556477619711761
+          ],
+          "expectation_value": -81.05585729852694,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 22,
+          "parameters": [
+            -3.3586348774388184,
+            1.2683849710917432
+          ],
+          "expectation_value": -81.05460547178417,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 23,
+          "parameters": [
+            -3.383838290488797,
+            1.2577157674506987
+          ],
+          "expectation_value": -81.05609676784927,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 24,
+          "parameters": [
+            -3.3888814694808436,
+            1.2663509481467918
+          ],
+          "expectation_value": -81.05683515567553,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 25,
+          "parameters": [
+            -3.3906721840724745,
+            1.2862706203642587
+          ],
+          "expectation_value": -81.05797808044251,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 26,
+          "parameters": [
+            -3.407888696758703,
+            1.3223759065551328
+          ],
+          "expectation_value": -81.05846882056476,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 27,
+          "parameters": [
+            -3.3735429960294727,
+            1.3428789024683687
+          ],
+          "expectation_value": -81.05821032237918,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 28,
+          "parameters": [
+            -3.424737394527381,
+            1.3331518697835287
+          ],
+          "expectation_value": -81.0573562908811,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 29,
+          "parameters": [
+            -3.403631843724583,
+            1.3133271938154165
+          ],
+          "expectation_value": -81.05804030726088,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 30,
+          "parameters": [
+            -3.400133899211787,
+            1.3286896308923484
+          ],
+          "expectation_value": -81.05965919132215,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 31,
+          "parameters": [
+            -3.39320359629834,
+            1.3358987155449147
+          ],
+          "expectation_value": -81.05970250860072,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 32,
+          "parameters": [
+            -3.4002545748021635,
+            1.3429898157514142
+          ],
+          "expectation_value": -81.05988848770384,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 33,
+          "parameters": [
+            -3.4056943295207294,
+            1.3513808269301602
+          ],
+          "expectation_value": -81.06020297830635,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 34,
+          "parameters": [
+            -3.4237949674675137,
+            1.3598877009693968
+          ],
+          "expectation_value": -81.05782157421153,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 35,
+          "parameters": [
+            -3.397972926437536,
+            1.357735347716722
+          ],
+          "expectation_value": -81.06144436853336,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 36,
+          "parameters": [
+            -3.3912148023013073,
+            1.365106084325727
+          ],
+          "expectation_value": -81.06108550734763,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 37,
+          "parameters": [
+            -3.402114772036267,
+            1.3605362609671225
+          ],
+          "expectation_value": -81.06052206180989,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 38,
+          "parameters": [
+            -3.398673154750136,
+            1.3566998863170392
+          ],
+          "expectation_value": -81.06144436853336,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 39,
+          "parameters": [
+            -3.39590200363817,
+            1.3563348910915216
+          ],
+          "expectation_value": -81.06133399499599,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 40,
+          "parameters": [
+            -3.398387110997409,
+            1.358015439041762
+          ],
+          "expectation_value": -81.06159327985009,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 41,
+          "parameters": [
+            -3.3992154801171552,
+            1.358575621691842
+          ],
+          "expectation_value": -81.0613613247382,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 42,
+          "parameters": [
+            -3.3978924061803197,
+            1.3580880141335532
+          ],
+          "expectation_value": -81.06144436853336,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 43,
+          "parameters": [
+            -3.3984052547703567,
+            1.3581391152460345
+          ],
+          "expectation_value": -81.06159327985009,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 44,
+          "parameters": [
+            -3.398634463405954,
+            1.3579791514958663
+          ],
+          "expectation_value": -81.06159327985009,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 45,
+          "parameters": [
+            -3.398436581479118,
+            1.3580081815325828
+          ],
+          "expectation_value": -81.06159327985009,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        }
+      ],
+      "hamming_weight_distribution": {
+        "0": 0.0,
+        "1": 1.0,
+        "2": 0.0,
+        "3": 0.0,
+        "4": 0.0,
+        "5": 0.0,
+        "6": 0.0,
+        "7": 0.0,
+        "8": 0.0,
+        "9": 0.0,
+        "10": 0.0,
+        "11": 0.0,
+        "12": 0.0,
+        "13": 0.0,
+        "14": 0.0
+      },
+      "constraint_leakage_probability": 0.0
+    },
+    {
+      "success": true,
+      "message": "At least one feasible exactly-one state was sampled.",
+      "raw_most_probable_state": {
+        "qiskit_state_label_xn_to_x0": "00000000000010",
+        "bit_string_x0_to_xn": "01000000000000",
+        "probability": 0.14501953125,
+        "feasible": true,
+        "qubo_energy": 0.30000000000000004,
+        "weighted_score": 0.3,
+        "selected_alternative_id": "alt-20844375cc3e",
+        "provider": "M-Pesa",
+        "payment_instrument": "Mobile money",
+        "pickup_method": "Cash"
+      },
+      "best_feasible_sampled_state": {
+        "qiskit_state_label_xn_to_x0": "01000000000000",
+        "bit_string_x0_to_xn": "00000000000010",
+        "probability": 0.11328125,
+        "feasible": true,
+        "qubo_energy": 0.001257839032542174,
+        "weighted_score": 0.0012578390325420881,
+        "selected_alternative_id": "alt-cc1e0457fb2b",
+        "provider": "Western Union",
+        "payment_instrument": "Cash",
+        "pickup_method": "Cash"
+      },
+      "feasible_state_probabilities": {
+        "00000000000001": 0.0244140625,
+        "00000000000010": 0.14501953125,
+        "00000000000100": 0.068359375,
+        "00000000001000": 0.041015625,
+        "00000000010000": 0.07080078125,
+        "00000000100000": 0.09619140625,
+        "00000001000000": 0.068359375,
+        "00000010000000": 0.07470703125,
+        "00000100000000": 0.056640625,
+        "00001000000000": 0.03125,
+        "00010000000000": 0.13671875,
+        "00100000000000": 0.00927734375,
+        "01000000000000": 0.11328125,
+        "10000000000000": 0.06396484375
+      },
+      "feasible_probability": 1.0,
+      "exact_optimal_bit_strings_x0_to_xn": [
+        "00000000000010"
+      ],
+      "exact_optimal_qiskit_labels_xn_to_x0": [
+        "01000000000000"
+      ],
+      "exact_weighted_score": 0.0012578390325420881,
+      "optimal_state_probability": 0.11328125,
+      "exact_optimum_sampled": true,
+      "exact_optimum_most_probable": false,
+      "best_feasible_weighted_score": 0.0012578390325420881,
+      "absolute_optimality_gap": 0.0,
+      "metrics": {
+        "qubit_count": 14,
+        "qaoa_repetitions": 1,
+        "shots": 2048,
+        "algorithm_seed": 29,
+        "simulator_seed": 29,
+        "transpiler_seed": 29,
+        "optimizer": "COBYLA",
+        "maximum_iterations": 60,
+        "actual_evaluations": 35,
+        "ising_conversion_time_seconds": 0.005533916992135346,
+        "circuit_construction_time_seconds": 0.044047290983144194,
+        "transpilation_time_seconds": 0.0007940829964354634,
+        "optimization_time_seconds": 0.34978699684143066,
+        "optimizer_sampler_time_seconds": 0.27416450408054516,
+        "final_sampling_time_seconds": 0.008144000021275133,
+        "queue_time_seconds": 0.0,
+        "total_execution_time_seconds": 0.4422808329691179,
+        "circuit": {
+          "original_depth": 32,
+          "decomposed_depth": 283,
+          "transpiled_depth": 72,
+          "number_of_parameters": 2
+        },
+        "mixer_type": "constraint_preserving_xy",
+        "initial_state_type": "uniform_one_hot_w_state",
+        "mixer_connectivity": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            4,
+            5
+          ],
+          [
+            5,
+            6
+          ],
+          [
+            6,
+            7
+          ],
+          [
+            7,
+            8
+          ],
+          [
+            8,
+            9
+          ],
+          [
+            9,
+            10
+          ],
+          [
+            10,
+            11
+          ],
+          [
+            11,
+            12
+          ],
+          [
+            12,
+            13
+          ],
+          [
+            13,
+            0
+          ]
+        ]
+      },
+      "optimal_parameters": [
+        -6.52551440560277,
+        1.7229711135248278
+      ],
+      "final_expectation_value_without_ising_offset": -81.07497323471304,
+      "ising_offset": 81.32589835967275,
+      "callback_history": [
+        {
+          "evaluation_number": 1,
+          "parameters": [
+            -5.65427652958451,
+            0.07944834698346662
+          ],
+          "expectation_value": -81.00719610799058,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 2,
+          "parameters": [
+            -4.65427652958451,
+            0.07944834698346662
+          ],
+          "expectation_value": -80.9907581965583,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 3,
+          "parameters": [
+            -5.65427652958451,
+            1.0794483469834666
+          ],
+          "expectation_value": -81.01429017760898,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 4,
+          "parameters": [
+            -6.572422605029625,
+            1.4756904246894225
+          ],
+          "expectation_value": -81.06199583049514,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 5,
+          "parameters": [
+            -8.551700498713249,
+            1.7628472103924835
+          ],
+          "expectation_value": -80.9694090056113,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 6,
+          "parameters": [
+            -5.972672375702054,
+            2.2758776917847725
+          ],
+          "expectation_value": -80.87244932045672,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 7,
+          "parameters": [
+            -7.027084380062997,
+            1.2676455489450216
+          ],
+          "expectation_value": -80.98819437415534,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 8,
+          "parameters": [
+            -6.624433823965726,
+            1.5893558684477656
+          ],
+          "expectation_value": -81.05742551493863,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 9,
+          "parameters": [
+            -6.326749454935153,
+            1.5220013664058165
+          ],
+          "expectation_value": -81.01550991299122,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 10,
+          "parameters": [
+            -6.654421202305111,
+            1.41845206303526
+          ],
+          "expectation_value": -81.04888041753306,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 11,
+          "parameters": [
+            -6.473926485606678,
+            1.4929679956593405
+          ],
+          "expectation_value": -81.06185043546867,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 12,
+          "parameters": [
+            -6.565664699902155,
+            1.4261492224604886
+          ],
+          "expectation_value": -81.06053844103572,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 13,
+          "parameters": [
+            -6.5848079055868585,
+            1.474000948407555
+          ],
+          "expectation_value": -81.06043083185214,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 14,
+          "parameters": [
+            -6.549063346803677,
+            1.4845980088250599
+          ],
+          "expectation_value": -81.06523583263036,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 15,
+          "parameters": [
+            -6.502311246543405,
+            1.5023248562958738
+          ],
+          "expectation_value": -81.06581106154196,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 16,
+          "parameters": [
+            -6.5080615731818225,
+            1.5266545448173388
+          ],
+          "expectation_value": -81.06631775794713,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 17,
+          "parameters": [
+            -6.503497380058876,
+            1.5512343768170993
+          ],
+          "expectation_value": -81.06720967532003,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 18,
+          "parameters": [
+            -6.519809999724831,
+            1.5984985116302308
+          ],
+          "expectation_value": -81.07006693983108,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 19,
+          "parameters": [
+            -6.57113136329784,
+            1.684324601142727
+          ],
+          "expectation_value": -81.07018918493075,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 20,
+          "parameters": [
+            -6.528782375835049,
+            1.710905858842023
+          ],
+          "expectation_value": -81.07459625606708,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 21,
+          "parameters": [
+            -6.443676305762645,
+            1.763412590189833
+          ],
+          "expectation_value": -81.06645148828275,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 22,
+          "parameters": [
+            -6.577043394566268,
+            1.7239777397711367
+          ],
+          "expectation_value": -81.06938833706162,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 23,
+          "parameters": [
+            -6.52551440560277,
+            1.7229711135248278
+          ],
+          "expectation_value": -81.07497323471304,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 24,
+          "parameters": [
+            -6.500518157090991,
+            1.7234041958927213
+          ],
+          "expectation_value": -81.07330862625055,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 25,
+          "parameters": [
+            -6.530340507475892,
+            1.7242783016177392
+          ],
+          "expectation_value": -81.07404704249494,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 26,
+          "parameters": [
+            -6.515567526562571,
+            1.7219417460687458
+          ],
+          "expectation_value": -81.07408724019449,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 27,
+          "parameters": [
+            -6.52971609197526,
+            1.7256814329944175
+          ],
+          "expectation_value": -81.07476103014334,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 28,
+          "parameters": [
+            -6.524836825735373,
+            1.7240215351179502
+          ],
+          "expectation_value": -81.07488824046862,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 29,
+          "parameters": [
+            -6.52555162060066,
+            1.720471390531388
+          ],
+          "expectation_value": -81.07450749263839,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 30,
+          "parameters": [
+            -6.525934574240019,
+            1.7232421454717868
+          ],
+          "expectation_value": -81.07465640395512,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 31,
+          "parameters": [
+            -6.524736699417026,
+            1.7223424855834697
+          ],
+          "expectation_value": -81.07473932915191,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 32,
+          "parameters": [
+            -6.525992137989985,
+            1.7231186661127629
+          ],
+          "expectation_value": -81.07465640395512,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 33,
+          "parameters": [
+            -6.525551293749754,
+            1.722851680428024
+          ],
+          "expectation_value": -81.07497323471304,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 34,
+          "parameters": [
+            -6.525275539409163,
+            1.7228973372308602
+          ],
+          "expectation_value": -81.07497323471304,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 35,
+          "parameters": [
+            -6.525466632364049,
+            1.7229563582660343
+          ],
+          "expectation_value": -81.07497323471304,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        }
+      ],
+      "hamming_weight_distribution": {
+        "0": 0.0,
+        "1": 1.0,
+        "2": 0.0,
+        "3": 0.0,
+        "4": 0.0,
+        "5": 0.0,
+        "6": 0.0,
+        "7": 0.0,
+        "8": 0.0,
+        "9": 0.0,
+        "10": 0.0,
+        "11": 0.0,
+        "12": 0.0,
+        "13": 0.0,
+        "14": 0.0
+      },
+      "constraint_leakage_probability": 0.0
+    },
+    {
+      "success": true,
+      "message": "At least one feasible exactly-one state was sampled.",
+      "raw_most_probable_state": {
+        "qiskit_state_label_xn_to_x0": "00010000000000",
+        "bit_string_x0_to_xn": "00000000001000",
+        "probability": 0.173828125,
+        "feasible": true,
+        "qubo_energy": 0.16468707339568756,
+        "weighted_score": 0.16468707339568753,
+        "selected_alternative_id": "alt-ac5be959dbde",
+        "provider": "MoneyGram",
+        "payment_instrument": "Cash",
+        "pickup_method": "Cash"
+      },
+      "best_feasible_sampled_state": {
+        "qiskit_state_label_xn_to_x0": "01000000000000",
+        "bit_string_x0_to_xn": "00000000000010",
+        "probability": 0.0888671875,
+        "feasible": true,
+        "qubo_energy": 0.001257839032542174,
+        "weighted_score": 0.0012578390325420881,
+        "selected_alternative_id": "alt-cc1e0457fb2b",
+        "provider": "Western Union",
+        "payment_instrument": "Cash",
+        "pickup_method": "Cash"
+      },
+      "feasible_state_probabilities": {
+        "00000000000001": 0.00048828125,
+        "00000000000010": 0.15869140625,
+        "00000000000100": 0.06884765625,
+        "00000000001000": 0.02490234375,
+        "00000000010000": 0.0537109375,
+        "00000000100000": 0.12890625,
+        "00000001000000": 0.07568359375,
+        "00000010000000": 0.09814453125,
+        "00000100000000": 0.04443359375,
+        "00001000000000": 0.0078125,
+        "00010000000000": 0.173828125,
+        "00100000000000": 0.0078125,
+        "01000000000000": 0.0888671875,
+        "10000000000000": 0.06787109375
+      },
+      "feasible_probability": 1.0,
+      "exact_optimal_bit_strings_x0_to_xn": [
+        "00000000000010"
+      ],
+      "exact_optimal_qiskit_labels_xn_to_x0": [
+        "01000000000000"
+      ],
+      "exact_weighted_score": 0.0012578390325420881,
+      "optimal_state_probability": 0.0888671875,
+      "exact_optimum_sampled": true,
+      "exact_optimum_most_probable": false,
+      "best_feasible_weighted_score": 0.0012578390325420881,
+      "absolute_optimality_gap": 0.0,
+      "metrics": {
+        "qubit_count": 14,
+        "qaoa_repetitions": 1,
+        "shots": 2048,
+        "algorithm_seed": 47,
+        "simulator_seed": 47,
+        "transpiler_seed": 47,
+        "optimizer": "COBYLA",
+        "maximum_iterations": 60,
+        "actual_evaluations": 27,
+        "ising_conversion_time_seconds": 0.005562042002566159,
+        "circuit_construction_time_seconds": 0.04326266603311524,
+        "transpilation_time_seconds": 0.0007567499997094274,
+        "optimization_time_seconds": 0.27323007583618164,
+        "optimizer_sampler_time_seconds": 0.21227566804736853,
+        "final_sampling_time_seconds": 0.008356083009857684,
+        "queue_time_seconds": 0.0,
+        "total_execution_time_seconds": 0.36440833401866257,
+        "circuit": {
+          "original_depth": 32,
+          "decomposed_depth": 283,
+          "transpiled_depth": 72,
+          "number_of_parameters": 2
+        },
+        "mixer_type": "constraint_preserving_xy",
+        "initial_state_type": "uniform_one_hot_w_state",
+        "mixer_connectivity": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            4,
+            5
+          ],
+          [
+            5,
+            6
+          ],
+          [
+            6,
+            7
+          ],
+          [
+            7,
+            8
+          ],
+          [
+            8,
+            9
+          ],
+          [
+            9,
+            10
+          ],
+          [
+            10,
+            11
+          ],
+          [
+            11,
+            12
+          ],
+          [
+            12,
+            13
+          ],
+          [
+            13,
+            0
+          ]
+        ]
+      },
+      "optimal_parameters": [
+        2.887284947026055,
+        3.1993075029714557
+      ],
+      "final_expectation_value_without_ising_offset": -81.10314178967079,
+      "ising_offset": 81.32589835967275,
+      "callback_history": [
+        {
+          "evaluation_number": 1,
+          "parameters": [
+            3.0385734799697075,
+            3.1876963692310913
+          ],
+          "expectation_value": -81.06951519904266,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 2,
+          "parameters": [
+            4.038573479969708,
+            3.1876963692310913
+          ],
+          "expectation_value": -80.98024890233249,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 3,
+          "parameters": [
+            3.0385734799697075,
+            4.187696369231091
+          ],
+          "expectation_value": -81.06313467507236,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 4,
+          "parameters": [
+            2.041118243469061,
+            3.116400849193438
+          ],
+          "expectation_value": -81.01244404787289,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 5,
+          "parameters": [
+            3.535541363850139,
+            3.132715259826082
+          ],
+          "expectation_value": -80.89961700735176,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 6,
+          "parameters": [
+            2.7886168307817325,
+            3.183040885720263
+          ],
+          "expectation_value": -81.0815913162974,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 7,
+          "parameters": [
+            2.540779413887304,
+            3.1502290770670154
+          ],
+          "expectation_value": -80.99721631239001,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 8,
+          "parameters": [
+            2.795179192512382,
+            3.1334734023413775
+          ],
+          "expectation_value": -81.08105509775592,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 9,
+          "parameters": [
+            2.887284947026055,
+            3.1993075029714557
+          ],
+          "expectation_value": -81.10314178967079,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 10,
+          "parameters": [
+            2.985644093646142,
+            3.2173485194663276
+          ],
+          "expectation_value": -81.09117899499824,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 11,
+          "parameters": [
+            2.8702563620687855,
+            3.246318430364489
+          ],
+          "expectation_value": -81.09982810158876,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 12,
+          "parameters": [
+            2.8755322151777967,
+            3.195050356732138
+          ],
+          "expectation_value": -81.10142128754248,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 13,
+          "parameters": [
+            2.9121570038606426,
+            3.196781480640389
+          ],
+          "expectation_value": -81.10301529187801,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 14,
+          "parameters": [
+            2.888141673215944,
+            3.2092707363941733
+          ],
+          "expectation_value": -81.10300642036816,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 15,
+          "parameters": [
+            2.8971386041378615,
+            3.1976029673974815
+          ],
+          "expectation_value": -81.10245009085132,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 16,
+          "parameters": [
+            2.8823118103956555,
+            3.1987899007541327
+          ],
+          "expectation_value": -81.10265156555779,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 17,
+          "parameters": [
+            2.8897262211137407,
+            3.198768818621586
+          ],
+          "expectation_value": -81.10268878957199,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 18,
+          "parameters": [
+            2.8871772101560813,
+            3.1988192481539186
+          ],
+          "expectation_value": -81.10293881175149,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 19,
+          "parameters": [
+            2.8870836901409294,
+            3.2002870414679885
+          ],
+          "expectation_value": -81.10293881175149,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 20,
+          "parameters": [
+            2.8867951777777887,
+            3.1992068745288926
+          ],
+          "expectation_value": -81.10293881175149,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 21,
+          "parameters": [
+            2.8882510777072015,
+            3.1990494496689235
+          ],
+          "expectation_value": -81.10298536279507,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 22,
+          "parameters": [
+            2.886949763982942,
+            3.19893648770545
+          ],
+          "expectation_value": -81.10293881175149,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 23,
+          "parameters": [
+            2.887279257510492,
+            3.199557438221896
+          ],
+          "expectation_value": -81.10314178967079,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 24,
+          "parameters": [
+            2.887334934076143,
+            3.1993086408745683
+          ],
+          "expectation_value": -81.1029957524222,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 25,
+          "parameters": [
+            2.887184972925879,
+            3.1993052271652305
+          ],
+          "expectation_value": -81.10293881175149,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 26,
+          "parameters": [
+            2.8872838091229425,
+            3.199357490021544
+          ],
+          "expectation_value": -81.10314178967079,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 27,
+          "parameters": [
+            2.8873849211262312,
+            3.199309778777681
+          ],
+          "expectation_value": -81.10297469484911,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        }
+      ],
+      "hamming_weight_distribution": {
+        "0": 0.0,
+        "1": 1.0,
+        "2": 0.0,
+        "3": 0.0,
+        "4": 0.0,
+        "5": 0.0,
+        "6": 0.0,
+        "7": 0.0,
+        "8": 0.0,
+        "9": 0.0,
+        "10": 0.0,
+        "11": 0.0,
+        "12": 0.0,
+        "13": 0.0,
+        "14": 0.0
+      },
+      "constraint_leakage_probability": 0.0
+    },
+    {
+      "success": true,
+      "message": "At least one feasible exactly-one state was sampled.",
+      "raw_most_probable_state": {
+        "qiskit_state_label_xn_to_x0": "00000000000010",
+        "bit_string_x0_to_xn": "01000000000000",
+        "probability": 0.14599609375,
+        "feasible": true,
+        "qubo_energy": 0.30000000000000004,
+        "weighted_score": 0.3,
+        "selected_alternative_id": "alt-20844375cc3e",
+        "provider": "M-Pesa",
+        "payment_instrument": "Mobile money",
+        "pickup_method": "Cash"
+      },
+      "best_feasible_sampled_state": {
+        "qiskit_state_label_xn_to_x0": "01000000000000",
+        "bit_string_x0_to_xn": "00000000000010",
+        "probability": 0.09033203125,
+        "feasible": true,
+        "qubo_energy": 0.001257839032542174,
+        "weighted_score": 0.0012578390325420881,
+        "selected_alternative_id": "alt-cc1e0457fb2b",
+        "provider": "Western Union",
+        "payment_instrument": "Cash",
+        "pickup_method": "Cash"
+      },
+      "feasible_state_probabilities": {
+        "00000000000001": 0.01318359375,
+        "00000000000010": 0.14599609375,
+        "00000000000100": 0.06591796875,
+        "00000000001000": 0.0341796875,
+        "00000000010000": 0.07666015625,
+        "00000000100000": 0.103515625,
+        "00000001000000": 0.06591796875,
+        "00000010000000": 0.09912109375,
+        "00000100000000": 0.0615234375,
+        "00001000000000": 0.0224609375,
+        "00010000000000": 0.14208984375,
+        "00100000000000": 0.0029296875,
+        "01000000000000": 0.09033203125,
+        "10000000000000": 0.076171875
+      },
+      "feasible_probability": 1.0,
+      "exact_optimal_bit_strings_x0_to_xn": [
+        "00000000000010"
+      ],
+      "exact_optimal_qiskit_labels_xn_to_x0": [
+        "01000000000000"
+      ],
+      "exact_weighted_score": 0.0012578390325420881,
+      "optimal_state_probability": 0.09033203125,
+      "exact_optimum_sampled": true,
+      "exact_optimum_most_probable": false,
+      "best_feasible_weighted_score": 0.0012578390325420881,
+      "absolute_optimality_gap": 0.0,
+      "metrics": {
+        "qubit_count": 14,
+        "qaoa_repetitions": 1,
+        "shots": 2048,
+        "algorithm_seed": 71,
+        "simulator_seed": 71,
+        "transpiler_seed": 71,
+        "optimizer": "COBYLA",
+        "maximum_iterations": 60,
+        "actual_evaluations": 28,
+        "ising_conversion_time_seconds": 0.005824333988130093,
+        "circuit_construction_time_seconds": 0.04496670898515731,
+        "transpilation_time_seconds": 0.0007492919685319066,
+        "optimization_time_seconds": 0.2938051223754883,
+        "optimizer_sampler_time_seconds": 0.2256520400987938,
+        "final_sampling_time_seconds": 0.008583083050325513,
+        "queue_time_seconds": 0.0,
+        "total_execution_time_seconds": 0.3887332080048509,
+        "circuit": {
+          "original_depth": 32,
+          "decomposed_depth": 283,
+          "transpiled_depth": 72,
+          "number_of_parameters": 2
+        },
+        "mixer_type": "constraint_preserving_xy",
+        "initial_state_type": "uniform_one_hot_w_state",
+        "mixer_connectivity": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            4,
+            5
+          ],
+          [
+            5,
+            6
+          ],
+          [
+            6,
+            7
+          ],
+          [
+            7,
+            8
+          ],
+          [
+            8,
+            9
+          ],
+          [
+            9,
+            10
+          ],
+          [
+            10,
+            11
+          ],
+          [
+            11,
+            12
+          ],
+          [
+            12,
+            13
+          ],
+          [
+            13,
+            0
+          ]
+        ]
+      },
+      "optimal_parameters": [
+        -3.376234040554939,
+        1.9315744051012438
+      ],
+      "final_expectation_value_without_ising_offset": -81.0846543191177,
+      "ising_offset": 81.32589835967275,
+      "callback_history": [
+        {
+          "evaluation_number": 1,
+          "parameters": [
+            -3.0986951177547715,
+            0.34606321502091186
+          ],
+          "expectation_value": -80.9821535946266,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 2,
+          "parameters": [
+            -2.0986951177547715,
+            0.34606321502091186
+          ],
+          "expectation_value": -80.97949858452778,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 3,
+          "parameters": [
+            -3.0986951177547715,
+            1.3460632150209118
+          ],
+          "expectation_value": -80.97087737886895,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 4,
+          "parameters": [
+            -3.3278802752503935,
+            -0.6273196303095917
+          ],
+          "expectation_value": -80.9606163612672,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 5,
+          "parameters": [
+            -3.156650372422495,
+            0.8426930454342685
+          ],
+          "expectation_value": -80.99189034588525,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 6,
+          "parameters": [
+            -3.2929611720257723,
+            1.8333591677537484
+          ],
+          "expectation_value": -81.06544266131509,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 7,
+          "parameters": [
+            -2.6858653726431982,
+            3.7389915274632575
+          ],
+          "expectation_value": -80.92827481648203,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 8,
+          "parameters": [
+            -4.249849710755469,
+            1.5429037934744185
+          ],
+          "expectation_value": -80.99377235179004,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 9,
+          "parameters": [
+            -3.074263220436097,
+            2.2829936926408836
+          ],
+          "expectation_value": -80.94573233138838,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 10,
+          "parameters": [
+            -3.1805525408039883,
+            1.7786846798563296
+          ],
+          "expectation_value": -81.0134165796899,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 11,
+          "parameters": [
+            -3.5423608373595927,
+            1.8160442339860927
+          ],
+          "expectation_value": -81.05093393452968,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 12,
+          "parameters": [
+            -3.2710913768668046,
+            1.8783226202424619
+          ],
+          "expectation_value": -81.05982267685492,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 13,
+          "parameters": [
+            -3.3911816213045536,
+            1.8521406305155867
+          ],
+          "expectation_value": -81.07855666889294,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 14,
+          "parameters": [
+            -3.4846143943966292,
+            1.8164991250433893
+          ],
+          "expectation_value": -81.06170461053934,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 15,
+          "parameters": [
+            -3.393797318439147,
+            1.902072164925217
+          ],
+          "expectation_value": -81.0798542611703,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 16,
+          "parameters": [
+            -3.4185288219546597,
+            1.9057263042030994
+          ],
+          "expectation_value": -81.07769841857609,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 17,
+          "parameters": [
+            -3.3930664905835703,
+            1.9070184656283196
+          ],
+          "expectation_value": -81.08044653529295,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 18,
+          "parameters": [
+            -3.3860625094362047,
+            1.9141559895748537
+          ],
+          "expectation_value": -81.08239267010123,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 19,
+          "parameters": [
+            -3.376234040554939,
+            1.9315744051012438
+          ],
+          "expectation_value": -81.0846543191177,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 20,
+          "parameters": [
+            -3.3578957000096548,
+            1.9395559629720598
+          ],
+          "expectation_value": -81.08221766306009,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 21,
+          "parameters": [
+            -3.383023096069849,
+            1.93891666124057
+          ],
+          "expectation_value": -81.08420690340039,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 22,
+          "parameters": [
+            -3.371672864070464,
+            1.9336227383449978
+          ],
+          "expectation_value": -81.08440940260974,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 23,
+          "parameters": [
+            -3.3757219572440005,
+            1.9304341109801249
+          ],
+          "expectation_value": -81.08441728779063,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 24,
+          "parameters": [
+            -3.3777960480951212,
+            1.9335263611572076
+          ],
+          "expectation_value": -81.08455788063246,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 25,
+          "parameters": [
+            -3.3754274281003385,
+            1.9321654857624762
+          ],
+          "expectation_value": -81.08437256352538,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 26,
+          "parameters": [
+            -3.377228911740068,
+            1.931675555113602
+          ],
+          "expectation_value": -81.08450850785435,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 27,
+          "parameters": [
+            -3.3759728121085764,
+            1.9320007379510347
+          ],
+          "expectation_value": -81.0846543191177,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 28,
+          "parameters": [
+            -3.3761274573424913,
+            1.931509097989653
+          ],
+          "expectation_value": -81.0846543191177,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        }
+      ],
+      "hamming_weight_distribution": {
+        "0": 0.0,
+        "1": 1.0,
+        "2": 0.0,
+        "3": 0.0,
+        "4": 0.0,
+        "5": 0.0,
+        "6": 0.0,
+        "7": 0.0,
+        "8": 0.0,
+        "9": 0.0,
+        "10": 0.0,
+        "11": 0.0,
+        "12": 0.0,
+        "13": 0.0,
+        "14": 0.0
+      },
+      "constraint_leakage_probability": 0.0
+    },
+    {
+      "success": true,
+      "message": "At least one feasible exactly-one state was sampled.",
+      "raw_most_probable_state": {
+        "qiskit_state_label_xn_to_x0": "00010000000000",
+        "bit_string_x0_to_xn": "00000000001000",
+        "probability": 0.11865234375,
+        "feasible": true,
+        "qubo_energy": 0.16468707339568756,
+        "weighted_score": 0.16468707339568753,
+        "selected_alternative_id": "alt-ac5be959dbde",
+        "provider": "MoneyGram",
+        "payment_instrument": "Cash",
+        "pickup_method": "Cash"
+      },
+      "best_feasible_sampled_state": {
+        "qiskit_state_label_xn_to_x0": "01000000000000",
+        "bit_string_x0_to_xn": "00000000000010",
+        "probability": 0.1005859375,
+        "feasible": true,
+        "qubo_energy": 0.001257839032542174,
+        "weighted_score": 0.0012578390325420881,
+        "selected_alternative_id": "alt-cc1e0457fb2b",
+        "provider": "Western Union",
+        "payment_instrument": "Cash",
+        "pickup_method": "Cash"
+      },
+      "feasible_state_probabilities": {
+        "00000000000001": 0.03662109375,
+        "00000000000010": 0.111328125,
+        "00000000000100": 0.07470703125,
+        "00000000001000": 0.0517578125,
+        "00000000010000": 0.0732421875,
+        "00000000100000": 0.08447265625,
+        "00000001000000": 0.05859375,
+        "00000010000000": 0.09130859375,
+        "00000100000000": 0.06787109375,
+        "00001000000000": 0.0439453125,
+        "00010000000000": 0.11865234375,
+        "00100000000000": 0.01953125,
+        "01000000000000": 0.1005859375,
+        "10000000000000": 0.0673828125
+      },
+      "feasible_probability": 1.0,
+      "exact_optimal_bit_strings_x0_to_xn": [
+        "00000000000010"
+      ],
+      "exact_optimal_qiskit_labels_xn_to_x0": [
+        "01000000000000"
+      ],
+      "exact_weighted_score": 0.0012578390325420881,
+      "optimal_state_probability": 0.1005859375,
+      "exact_optimum_sampled": true,
+      "exact_optimum_most_probable": false,
+      "best_feasible_weighted_score": 0.0012578390325420881,
+      "absolute_optimality_gap": 0.0,
+      "metrics": {
+        "qubit_count": 14,
+        "qaoa_repetitions": 1,
+        "shots": 2048,
+        "algorithm_seed": 97,
+        "simulator_seed": 97,
+        "transpiler_seed": 97,
+        "optimizer": "COBYLA",
+        "maximum_iterations": 60,
+        "actual_evaluations": 33,
+        "ising_conversion_time_seconds": 0.005696250009350479,
+        "circuit_construction_time_seconds": 0.04549029201734811,
+        "transpilation_time_seconds": 0.0008832499734126031,
+        "optimization_time_seconds": 0.33885812759399414,
+        "optimizer_sampler_time_seconds": 0.26230316795408726,
+        "final_sampling_time_seconds": 0.008080541039817035,
+        "queue_time_seconds": 0.0,
+        "total_execution_time_seconds": 0.4340462079853751,
+        "circuit": {
+          "original_depth": 32,
+          "decomposed_depth": 283,
+          "transpiled_depth": 72,
+          "number_of_parameters": 2
+        },
+        "mixer_type": "constraint_preserving_xy",
+        "initial_state_type": "uniform_one_hot_w_state",
+        "mixer_connectivity": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            4,
+            5
+          ],
+          [
+            5,
+            6
+          ],
+          [
+            6,
+            7
+          ],
+          [
+            7,
+            8
+          ],
+          [
+            8,
+            9
+          ],
+          [
+            9,
+            10
+          ],
+          [
+            10,
+            11
+          ],
+          [
+            11,
+            12
+          ],
+          [
+            12,
+            13
+          ],
+          [
+            13,
+            0
+          ]
+        ]
+      },
+      "optimal_parameters": [
+        3.344488421368166,
+        -1.3070537320903486
+      ],
+      "final_expectation_value_without_ising_offset": -81.05265007328003,
+      "ising_offset": 81.32589835967275,
+      "callback_history": [
+        {
+          "evaluation_number": 1,
+          "parameters": [
+            2.1899842045271476,
+            -0.8506019901631701
+          ],
+          "expectation_value": -80.97673370420256,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 2,
+          "parameters": [
+            3.1899842045271476,
+            -0.8506019901631701
+          ],
+          "expectation_value": -80.99983587899065,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 3,
+          "parameters": [
+            3.1899842045271476,
+            0.14939800983682994
+          ],
+          "expectation_value": -80.98313929972733,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 4,
+          "parameters": [
+            4.0004689744258055,
+            -1.4363617000804023
+          ],
+          "expectation_value": -80.99889152503047,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 5,
+          "parameters": [
+            2.879428985733766,
+            -1.2424635168281324
+          ],
+          "expectation_value": -80.92259957094933,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 6,
+          "parameters": [
+            3.092018822860907,
+            -0.7729631854648247
+          ],
+          "expectation_value": -80.96978935717038,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 7,
+          "parameters": [
+            3.4387606868280476,
+            -0.875305468743927
+          ],
+          "expectation_value": -81.03489931248413,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 8,
+          "parameters": [
+            3.659466900467166,
+            -0.7578798869438617
+          ],
+          "expectation_value": -81.01376906091343,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 9,
+          "parameters": [
+            3.4622458031880607,
+            -0.9194467114717507
+          ],
+          "expectation_value": -81.03681070027964,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 10,
+          "parameters": [
+            3.4011643791932453,
+            -0.9986241049800344
+          ],
+          "expectation_value": -81.03845649468082,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 11,
+          "parameters": [
+            3.446339980635111,
+            -1.0878382576373662
+          ],
+          "expectation_value": -81.04189848413225,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 12,
+          "parameters": [
+            3.5271458174000117,
+            -1.2707874766702012
+          ],
+          "expectation_value": -81.03835328897037,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 13,
+          "parameters": [
+            3.348931223457546,
+            -1.1104553756041242
+          ],
+          "expectation_value": -81.04410730921384,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 14,
+          "parameters": [
+            3.2543850420065032,
+            -1.077882080207028
+          ],
+          "expectation_value": -81.02543347338363,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 15,
+          "parameters": [
+            3.3659584198878996,
+            -1.2089950862883057
+          ],
+          "expectation_value": -81.04960793112024,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 16,
+          "parameters": [
+            3.349907374353195,
+            -1.3076985002983734
+          ],
+          "expectation_value": -81.05243598302498,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 17,
+          "parameters": [
+            3.2528388141050333,
+            -1.33173377877292
+          ],
+          "expectation_value": -81.03284692018592,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 18,
+          "parameters": [
+            3.445840431407304,
+            -1.3359270065332598
+          ],
+          "expectation_value": -81.05165696509667,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 19,
+          "parameters": [
+            3.324007378902779,
+            -1.3504675339052767
+          ],
+          "expectation_value": -81.05073791811036,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 20,
+          "parameters": [
+            3.351896923209412,
+            -1.282777792135307
+          ],
+          "expectation_value": -81.05160796108565,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 21,
+          "parameters": [
+            3.344923232720582,
+            -1.30730059052713
+          ],
+          "expectation_value": -81.05254933487448,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 22,
+          "parameters": [
+            3.3386361139088763,
+            -1.3150769738154906
+          ],
+          "expectation_value": -81.05146702292669,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 23,
+          "parameters": [
+            3.3441870646442826,
+            -1.2973277245116137
+          ],
+          "expectation_value": -81.05197441521639,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 24,
+          "parameters": [
+            3.349840157748271,
+            -1.3082082514065811
+          ],
+          "expectation_value": -81.05243598302498,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 25,
+          "parameters": [
+            3.3436889405366745,
+            -1.3094746472892098
+          ],
+          "expectation_value": -81.0523313973551,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 26,
+          "parameters": [
+            3.344488421368166,
+            -1.3070537320903486
+          ],
+          "expectation_value": -81.05265007328003,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 27,
+          "parameters": [
+            3.34388636035436,
+            -1.306255282006965
+          ],
+          "expectation_value": -81.05262901570694,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 28,
+          "parameters": [
+            3.3448876464098576,
+            -1.3067527015834457
+          ],
+          "expectation_value": -81.05254933487448,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 29,
+          "parameters": [
+            3.3437568810427836,
+            -1.3077355302660132
+          ],
+          "expectation_value": -81.0523313973551,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 30,
+          "parameters": [
+            3.3449064058248017,
+            -1.3067793436904283
+          ],
+          "expectation_value": -81.05254933487448,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 31,
+          "parameters": [
+            3.344305380030176,
+            -1.307224013823329
+          ],
+          "expectation_value": -81.05265007328003,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 32,
+          "parameters": [
+            3.344522477714762,
+            -1.3070903403579466
+          ],
+          "expectation_value": -81.05265007328003,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        },
+        {
+          "evaluation_number": 33,
+          "parameters": [
+            3.344451813100568,
+            -1.3070877884369447
+          ],
+          "expectation_value": -81.05265007328003,
+          "metadata": {
+            "circuit_metadata": {},
+            "target_precision": null
+          }
+        }
+      ],
+      "hamming_weight_distribution": {
+        "0": 0.0,
+        "1": 1.0,
+        "2": 0.0,
+        "3": 0.0,
+        "4": 0.0,
+        "5": 0.0,
+        "6": 0.0,
+        "7": 0.0,
+        "8": 0.0,
+        "9": 0.0,
+        "10": 0.0,
+        "11": 0.0,
+        "12": 0.0,
+        "13": 0.0,
+        "14": 0.0
+      },
+      "constraint_leakage_probability": 0.0
+    }
+  ],
+  "aggregate": {
+    "run_count": 5,
+    "successful_feasible_run_count": 5,
+    "modal_state_feasibility_count": 5,
+    "modal_state_feasibility_rate": 1.0,
+    "exact_optimum_recovery_count": 5,
+    "exact_optimum_recovery_rate": 1.0,
+    "optimal_state_probability": {
+      "mean": 0.09765625,
+      "standard_deviation": 0.008826958233184896
+    },
+    "feasible_probability": {
+      "mean": 1.0,
+      "standard_deviation": 0.0
+    },
+    "best_feasible_gap": {
+      "mean": 0.0,
+      "standard_deviation": 0.0
+    },
+    "runtime_seconds": {
+      "mean": 0.44654750839108603,
+      "standard_deviation": 0.08345709963880762
+    },
+    "constraint_leakage_probability": {
+      "mean": 0.0,
+      "standard_deviation": 0.0
+    }
+  }
+}

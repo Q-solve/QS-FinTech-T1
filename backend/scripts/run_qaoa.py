@@ -13,6 +13,7 @@ from backend.app.optimization.qaoa_experiment import (
     REFERENCE_SEEDS,
     run_qaoa_experiment,
 )
+from backend.app.optimization.qaoa_models import QaoaMixer
 from backend.app.optimization.qubo import DEFAULT_QUBO_PENALTY
 
 
@@ -30,17 +31,35 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--reps", type=int, default=1)
     parser.add_argument("--shots", type=int, default=2_048)
     parser.add_argument("--max-iterations", type=int, default=60)
+    parser.add_argument(
+        "--mixer",
+        choices=tuple(item.value for item in QaoaMixer),
+        default=QaoaMixer.STANDARD_X.value,
+    )
     parser.add_argument("--seeds", type=int, nargs="+", default=list(REFERENCE_SEEDS))
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("experiments/results/qaoa_reference_p1.json"),
+        default=None,
     )
+    parser.add_argument("--overwrite", action="store_true")
     return parser
 
 
 def main() -> None:
     args = _parser().parse_args()
+    output = args.output or Path(
+        "experiments/results/"
+        + (
+            f"qaoa_xy_p{args.reps}.json"
+            if args.mixer == QaoaMixer.CONSTRAINT_PRESERVING_XY.value
+            else f"qaoa_reference_p{args.reps}.json"
+        )
+    )
+    if output.exists() and not args.overwrite:
+        raise SystemExit(
+            f"Refusing to overwrite existing result {output}; choose another --output."
+        )
     result = run_qaoa_experiment(
         period=args.period,
         corridor=args.corridor,
@@ -55,14 +74,15 @@ def main() -> None:
         shots=args.shots,
         max_iterations=args.max_iterations,
         seeds=tuple(args.seeds),
+        mixer=QaoaMixer(args.mixer),
     )
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(
         json.dumps(result.to_dict(), indent=2, allow_nan=False) + "\n",
         encoding="utf-8",
     )
     aggregate = result.aggregate
-    print(f"Saved {len(result.runs)} run(s) to {args.output}")
+    print(f"Saved {len(result.runs)} run(s) to {output}")
     for run in result.runs:
         state = run.best_feasible_sampled_state
         print(

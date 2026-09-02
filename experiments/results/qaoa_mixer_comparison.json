@@ -1,0 +1,520 @@
+{
+  "schema_version": "2.0",
+  "generated_at_utc": "2026-09-02T09:13:49.077294+00:00",
+  "comparison_basis": {
+    "problem": {
+      "period": "2025_3Q",
+      "corridor": "KENTZA",
+      "benchmark": "CC2",
+      "benchmark_amount": 45000.0,
+      "benchmark_currency": "KES",
+      "weights": {
+        "fee_weight": 0.4,
+        "fx_weight": 0.3,
+        "speed_weight": 0.3
+      },
+      "penalty": 2.0,
+      "minimum_safe_penalty_condition": "P > 0.0012578390325420881",
+      "qubit_count": 14
+    },
+    "execution_protocol": {
+      "shots": 2048,
+      "optimizer": "COBYLA",
+      "maximum_iterations": 60,
+      "simulator": "qiskit-aer SamplerV2 (local, noiseless finite-shot)"
+    },
+    "package_versions": {
+      "python": "3.11.16",
+      "qiskit": "2.5.2",
+      "qiskit-aer": "0.17.2",
+      "qiskit-algorithms": "0.4.0",
+      "qiskit-optimization": "0.7.0",
+      "scipy": "1.17.1",
+      "numpy": "2.4.6"
+    },
+    "input_schema_versions": {
+      "standard_x_p1": "1.0",
+      "constraint_preserving_xy_p1": "2.0",
+      "standard_x_p2": "2.0",
+      "constraint_preserving_xy_p2": "2.0"
+    },
+    "varying_fields_reported_per_experiment": [
+      "mixer",
+      "initial_state",
+      "reps"
+    ],
+    "matched_seed_sets_by_reps": {
+      "1": [
+        11,
+        29,
+        47,
+        71,
+        97
+      ],
+      "2": [
+        11,
+        29,
+        47,
+        71,
+        97
+      ]
+    },
+    "objective_inputs_in_variable_order": [
+      {
+        "variable": "x_0",
+        "alternative_id": "alt-16a0d6dbadda",
+        "provider": "United Bank for Africa (UBA)",
+        "payment_instrument": "Bank account transfer",
+        "pickup_method": "Bank account",
+        "fee_percentage": 6.772222222222222,
+        "fx_margin": 3.1,
+        "speed_ordinal": 3,
+        "normalized": {
+          "fee": 0.45776356220014014,
+          "fx": 0.4062165058949625,
+          "speed": 1.0
+        },
+        "weighted_score": 0.6049703766485448
+      },
+      {
+        "variable": "x_1",
+        "alternative_id": "alt-20844375cc3e",
+        "provider": "M-Pesa",
+        "payment_instrument": "Mobile money",
+        "pickup_method": "Cash",
+        "fee_percentage": 1.1111111111111112,
+        "fx_margin": 8.64,
+        "speed_ordinal": 0,
+        "normalized": {
+          "fee": 0.0,
+          "fx": 1.0,
+          "speed": 0.0
+        },
+        "weighted_score": 0.3
+      },
+      {
+        "variable": "x_2",
+        "alternative_id": "alt-29fa0176acdd",
+        "provider": "ABC Bank",
+        "payment_instrument": "Bank account transfer",
+        "pickup_method": "Bank account",
+        "fee_percentage": 4.0,
+        "fx_margin": 1.81,
+        "speed_ordinal": 3,
+        "normalized": {
+          "fee": 0.2335986774721029,
+          "fx": 0.2679528403001072,
+          "speed": 1.0
+        },
+        "weighted_score": 0.4738253230788733
+      },
+      {
+        "variable": "x_3",
+        "alternative_id": "alt-503fc0f80db8",
+        "provider": "KCB Bank",
+        "payment_instrument": "Bank account transfer",
+        "pickup_method": "Bank account",
+        "fee_percentage": 5.333333333333334,
+        "fx_margin": 1.81,
+        "speed_ordinal": 3,
+        "normalized": {
+          "fee": 0.3414134516899966,
+          "fx": 0.2679528403001072,
+          "speed": 1.0
+        },
+        "weighted_score": 0.5169512327660308
+      },
+      {
+        "variable": "x_4",
+        "alternative_id": "alt-5e860c308bdb",
+        "provider": "M-Pesa",
+        "payment_instrument": "Mobile money",
+        "pickup_method": "Mobile wallet",
+        "fee_percentage": 1.1111111111111112,
+        "fx_margin": 8.64,
+        "speed_ordinal": 0,
+        "normalized": {
+          "fee": 0.0,
+          "fx": 1.0,
+          "speed": 0.0
+        },
+        "weighted_score": 0.3
+      },
+      {
+        "variable": "x_5",
+        "alternative_id": "alt-60f5f9067629",
+        "provider": "EcoBank Rapid Transfer",
+        "payment_instrument": "Bank account transfer",
+        "pickup_method": "Cash",
+        "fee_percentage": 2.811111111111111,
+        "fx_margin": 1.81,
+        "speed_ordinal": 0,
+        "normalized": {
+          "fee": 0.13746383712781438,
+          "fx": 0.2679528403001072,
+          "speed": 0.0
+        },
+        "weighted_score": 0.1353713869411579
+      },
+      {
+        "variable": "x_6",
+        "alternative_id": "alt-9243c33ae323",
+        "provider": "UBA Africash",
+        "payment_instrument": "Cash",
+        "pickup_method": "Cash",
+        "fee_percentage": 2.493333333333333,
+        "fx_margin": 3.14,
+        "speed_ordinal": 0,
+        "normalized": {
+          "fee": 0.11176798260588305,
+          "fx": 0.4105037513397642,
+          "speed": 0.0
+        },
+        "weighted_score": 0.16785831844428248
+      },
+      {
+        "variable": "x_7",
+        "alternative_id": "alt-92a686bc27e8",
+        "provider": "EcoBank Rapid Transfer",
+        "payment_instrument": "Cash",
+        "pickup_method": "Cash",
+        "fee_percentage": 2.811111111111111,
+        "fx_margin": 1.81,
+        "speed_ordinal": 0,
+        "normalized": {
+          "fee": 0.13746383712781438,
+          "fx": 0.2679528403001072,
+          "speed": 0.0
+        },
+        "weighted_score": 0.1353713869411579
+      },
+      {
+        "variable": "x_8",
+        "alternative_id": "alt-9b44600ea942",
+        "provider": "GT Bank",
+        "payment_instrument": "Bank account transfer",
+        "pickup_method": "Bank account",
+        "fee_percentage": 6.550000000000001,
+        "fx_margin": 1.81,
+        "speed_ordinal": 2,
+        "normalized": {
+          "fee": 0.43979443316382455,
+          "fx": 0.2679528403001072,
+          "speed": 0.6666666666666666
+        },
+        "weighted_score": 0.4563036253555619
+      },
+      {
+        "variable": "x_9",
+        "alternative_id": "alt-a95dd80e8eea",
+        "provider": "Ecobank",
+        "payment_instrument": "Cash",
+        "pickup_method": "Cash",
+        "fee_percentage": 13.478000000000002,
+        "fx_margin": 1.81,
+        "speed_ordinal": 1,
+        "normalized": {
+          "fee": 1.0,
+          "fx": 0.2679528403001072,
+          "speed": 0.3333333333333333
+        },
+        "weighted_score": 0.5803858520900321
+      },
+      {
+        "variable": "x_10",
+        "alternative_id": "alt-ac5be959dbde",
+        "provider": "MoneyGram",
+        "payment_instrument": "Cash",
+        "pickup_method": "Cash",
+        "fee_percentage": 1.2222222222222223,
+        "fx_margin": 4.32,
+        "speed_ordinal": 0,
+        "normalized": {
+          "fee": 0.008984564518157807,
+          "fx": 0.5369774919614148,
+          "speed": 0.0
+        },
+        "weighted_score": 0.16468707339568753
+      },
+      {
+        "variable": "x_11",
+        "alternative_id": "alt-c77e722fb62f",
+        "provider": "Development Bank of Kenya",
+        "payment_instrument": "Bank account transfer",
+        "pickup_method": "Bank account",
+        "fee_percentage": 5.633333333333333,
+        "fx_margin": 5.65,
+        "speed_ordinal": 3,
+        "normalized": {
+          "fee": 0.3656717758890226,
+          "fx": 0.6795284030010718,
+          "speed": 1.0
+        },
+        "weighted_score": 0.6501272312559305
+      },
+      {
+        "variable": "x_12",
+        "alternative_id": "alt-cc1e0457fb2b",
+        "provider": "Western Union",
+        "payment_instrument": "Cash",
+        "pickup_method": "Cash",
+        "fee_percentage": 1.15,
+        "fx_margin": -0.69,
+        "speed_ordinal": 0,
+        "normalized": {
+          "fee": 0.00314459758135522,
+          "fx": 0.0,
+          "speed": 0.0
+        },
+        "weighted_score": 0.0012578390325420881
+      },
+      {
+        "variable": "x_13",
+        "alternative_id": "alt-f5f6dbf518bd",
+        "provider": "MoneyGram",
+        "payment_instrument": "Cash",
+        "pickup_method": "Mobile wallet",
+        "fee_percentage": 1.2222222222222223,
+        "fx_margin": 4.32,
+        "speed_ordinal": 0,
+        "normalized": {
+          "fee": 0.008984564518157807,
+          "fx": 0.5369774919614148,
+          "speed": 0.0
+        },
+        "weighted_score": 0.16468707339568753
+      }
+    ]
+  },
+  "exact_weighted_score": 0.0012578390325420881,
+  "processed_dataset_sha256": "0b8f69c8c516fa9ea38951c80724f701ff2b16f2064e37ec3cc66c3b243fac90",
+  "input_artifacts": {
+    "standard_x_p1": {
+      "path": "experiments/results/qaoa_reference_p1.json",
+      "sha256": "5f8ddca234ff6df027f08ca43e3ad5d7afb7ef28bc9dc4bd4f860379141112c0"
+    },
+    "constraint_preserving_xy_p1": {
+      "path": "experiments/results/qaoa_xy_p1.json",
+      "sha256": "6fd2b88696ba5e73dea77765279abd04efdbe93ede70393278bad651732b9206"
+    },
+    "standard_x_p2": {
+      "path": "experiments/results/qaoa_reference_p2.json",
+      "sha256": "9ef33489dadd5beaba135359d83db3ee8370a835906b020363c78ca7849cd02e"
+    },
+    "constraint_preserving_xy_p2": {
+      "path": "experiments/results/qaoa_xy_p2.json",
+      "sha256": "bf72778f5159c01a8a1372a10f03583f2a56bea7cd6118e63420212b4e90ab42"
+    }
+  },
+  "interpretation": "Formulation and feasibility comparison only; not evidence of quantum speedup or quantum advantage over classical computing.",
+  "experiments": [
+    {
+      "name": "standard_x_p1",
+      "mixer": "standard_x",
+      "initial_state": "uniform_plus_state",
+      "reps": 1,
+      "seeds": [
+        11,
+        29,
+        47,
+        71,
+        97
+      ],
+      "run_count": 5,
+      "feasible_probability": {
+        "mean": 0.23232421875,
+        "standard_deviation": 0.1964341328812053
+      },
+      "constraint_leakage_probability": {
+        "mean": 0.76767578125,
+        "standard_deviation": 0.1964341328812053
+      },
+      "exact_optimum_recovery_count": 3,
+      "exact_optimum_recovery_rate": 0.6,
+      "optimal_state_probability": {
+        "mean": 0.0234375,
+        "standard_deviation": 0.02308284732385006
+      },
+      "best_feasible_gap": {
+        "mean": 0.11949686438698318,
+        "standard_deviation": 0.14635317180533386
+      },
+      "modal_state_feasibility_count": 0,
+      "modal_state_feasibility_rate": 0.0,
+      "circuit_depth": {
+        "original_depth": {
+          "mean": 28.0,
+          "standard_deviation": 0.0
+        },
+        "decomposed_depth": {
+          "mean": 78.0,
+          "standard_deviation": 0.0
+        },
+        "transpiled_depth": {
+          "mean": 28.0,
+          "standard_deviation": 0.0
+        }
+      },
+      "runtime_seconds": {
+        "mean": 0.5220831999904476,
+        "standard_deviation": 0.1096202682388699
+      }
+    },
+    {
+      "name": "constraint_preserving_xy_p1",
+      "mixer": "constraint_preserving_xy",
+      "initial_state": "uniform_one_hot_w_state",
+      "reps": 1,
+      "seeds": [
+        11,
+        29,
+        47,
+        71,
+        97
+      ],
+      "run_count": 5,
+      "feasible_probability": {
+        "mean": 1.0,
+        "standard_deviation": 0.0
+      },
+      "constraint_leakage_probability": {
+        "mean": 0.0,
+        "standard_deviation": 0.0
+      },
+      "exact_optimum_recovery_count": 5,
+      "exact_optimum_recovery_rate": 1.0,
+      "optimal_state_probability": {
+        "mean": 0.09765625,
+        "standard_deviation": 0.008826958233184896
+      },
+      "best_feasible_gap": {
+        "mean": 0.0,
+        "standard_deviation": 0.0
+      },
+      "modal_state_feasibility_count": 5,
+      "modal_state_feasibility_rate": 1.0,
+      "circuit_depth": {
+        "original_depth": {
+          "mean": 32.0,
+          "standard_deviation": 0.0
+        },
+        "decomposed_depth": {
+          "mean": 283.0,
+          "standard_deviation": 0.0
+        },
+        "transpiled_depth": {
+          "mean": 72.0,
+          "standard_deviation": 0.0
+        }
+      },
+      "runtime_seconds": {
+        "mean": 0.44654750839108603,
+        "standard_deviation": 0.08345709963880762
+      }
+    },
+    {
+      "name": "standard_x_p2",
+      "mixer": "standard_x",
+      "initial_state": "uniform_plus_state",
+      "reps": 2,
+      "seeds": [
+        11,
+        29,
+        47,
+        71,
+        97
+      ],
+      "run_count": 5,
+      "feasible_probability": {
+        "mean": 0.010546875,
+        "standard_deviation": 0.011466191227245673
+      },
+      "constraint_leakage_probability": {
+        "mean": 0.989453125,
+        "standard_deviation": 0.011466191227245673
+      },
+      "exact_optimum_recovery_count": 3,
+      "exact_optimum_recovery_rate": 0.6,
+      "optimal_state_probability": {
+        "mean": 0.00234375,
+        "standard_deviation": 0.002716880418602257
+      },
+      "best_feasible_gap": {
+        "mean": 0.0,
+        "standard_deviation": 0.0
+      },
+      "modal_state_feasibility_count": 0,
+      "modal_state_feasibility_rate": 0.0,
+      "circuit_depth": {
+        "original_depth": {
+          "mean": 44.0,
+          "standard_deviation": 0.0
+        },
+        "decomposed_depth": {
+          "mean": 122.0,
+          "standard_deviation": 0.0
+        },
+        "transpiled_depth": {
+          "mean": 44.0,
+          "standard_deviation": 0.0
+        }
+      },
+      "runtime_seconds": {
+        "mean": 0.9466893168049865,
+        "standard_deviation": 0.12393667197529958
+      }
+    },
+    {
+      "name": "constraint_preserving_xy_p2",
+      "mixer": "constraint_preserving_xy",
+      "initial_state": "uniform_one_hot_w_state",
+      "reps": 2,
+      "seeds": [
+        11,
+        29,
+        47,
+        71,
+        97
+      ],
+      "run_count": 5,
+      "feasible_probability": {
+        "mean": 1.0,
+        "standard_deviation": 0.0
+      },
+      "constraint_leakage_probability": {
+        "mean": 0.0,
+        "standard_deviation": 0.0
+      },
+      "exact_optimum_recovery_count": 5,
+      "exact_optimum_recovery_rate": 1.0,
+      "optimal_state_probability": {
+        "mean": 0.05908203125,
+        "standard_deviation": 0.036057512331782414
+      },
+      "best_feasible_gap": {
+        "mean": 0.0,
+        "standard_deviation": 0.0
+      },
+      "modal_state_feasibility_count": 5,
+      "modal_state_feasibility_rate": 1.0,
+      "circuit_depth": {
+        "original_depth": {
+          "mean": 61.0,
+          "standard_deviation": 0.0
+        },
+        "decomposed_depth": {
+          "mean": 469.0,
+          "standard_deviation": 0.0
+        },
+        "transpiled_depth": {
+          "mean": 115.0,
+          "standard_deviation": 0.0
+        }
+      },
+      "runtime_seconds": {
+        "mean": 0.860026675008703,
+        "standard_deviation": 0.056200039247936866
+      }
+    }
+  ]
+}

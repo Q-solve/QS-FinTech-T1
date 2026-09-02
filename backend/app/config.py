@@ -2,10 +2,12 @@
 
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CLEANED_DATASET_PATH = (
     PROJECT_ROOT / "data" / "processed" / "remittance_east_africa_clean.csv"
+)
+QAOA_COMPARISON_PATH = (
+    PROJECT_ROOT / "experiments" / "results" / "qaoa_mixer_comparison.json"
 )
 
 APP_NAME = "Remit-Q API"

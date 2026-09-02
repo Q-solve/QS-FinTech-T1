@@ -11,7 +11,7 @@ def create_app() -> FastAPI:
     application = FastAPI(
         title=APP_NAME,
         version=APP_VERSION,
-        description="Read-only data foundation for the Remit-Q research prototype.",
+        description="Validated data, recommendation, and QAOA showcase for Remit-Q.",
     )
     application.add_middleware(
         CORSMiddleware,
