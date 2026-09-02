@@ -19,17 +19,21 @@ outcome.
   never read the CSV, so they pass without the dataset present.
 - This repository intentionally keeps no project-local virtual environment under version control.
   `.vscode/settings.json` pins `python.defaultInterpreterPath` to an interpreter outside the tree.
-- The datasets under `data/` are **not tracked by Git**. Obtain them as described in
-  `docs/data_audit.md` before running `app.py`.
+- The dataset is `data/processed/remittance_east_africa_clean.csv` — 4,026 rows, 30 columns, an
+  audited and deduplicated RPW East Africa export. It is **not tracked by Git**. Obtain it as
+  described in `docs/data_audit.md` before running `app.py`.
 - `data/QKash.png` is tracked and is the only committed binary asset.
 
 ## Data safety and provenance
 
 - Never modify the source CSVs in place. Treat them as read-only inputs.
 - Before data work, read `docs/data_audit.md`.
-- `qkash/data.py` lowercases and strips every column label on load, and maps a small set of
-  underscore aliases (`access_point` → `access point`, and similar). Do not add new column spellings
-  without updating `COLUMN_ALIASES` and the audit document together.
+- `qkash/data.py` lowercases and strips every column label on load, and maps a small alias set
+  (`access_point` → `access point`, `pick-up method` → `pickup method`, and similar). Do not add new
+  column spellings without updating `COLUMN_ALIASES` and the audit document together.
+- Dates are parsed by `parse_dates`, which tries each format in `DATE_FORMATS` against the values
+  still unparsed. Never narrow this back to a single fixed format: the audited export is ISO and the
+  older extracts are `24/Jan/2011`, and a single format silently produces `NaT` rather than failing.
 - Do not invent columns, providers, corridors, measurements, or results.
 - Keep raw provider names unless an explicit, documented mapping is approved. Case and whitespace
   normalization is safe for comparison, but do not merge names merely because they appear related. In
@@ -48,6 +52,9 @@ outcome.
   Dataset rows are observations, not qubits or decision variables.
 - The three supported objectives are transaction fee, transfer time, and FX spread. All three are
   encoded as lower-is-better losses in `qkash/scoring.py`.
+- `receiving network coverage` and `access point` do not exist in the current export and are created
+  empty by the loader. Do not build an objective or a filter on either without sourcing the field
+  first; `coverage_score` is constant at 0.35 across every row.
 - Min-max normalization is computed over the filtered candidate pool, not over the final modelled
   subset. Record the normalization method, bounds, direction, treatment of constants and outliers,
   and weight semantics whenever they change.

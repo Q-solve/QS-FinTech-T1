@@ -21,8 +21,8 @@ import pandas as pd
 # PROJECT_ROOT is the repository root; it is used to find the default CSV.
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
-# DEFAULT_DATA_PATH is the RPW CSV used by the app.
-DEFAULT_DATA_PATH = PROJECT_ROOT / "data" / "rpw_dataset_2011_2025_q3_EastAfrica.csv"
+# DEFAULT_DATA_PATH is the audited RPW extract used by the app.
+DEFAULT_DATA_PATH = PROJECT_ROOT / "data" / "processed" / "remittance_east_africa_clean.csv"
 
 # TEXT_COLUMNS are normalized to clean strings during load.
 TEXT_COLUMNS = (
@@ -61,7 +61,13 @@ COLUMN_ALIASES = {
     "receiving_network_coverage": "receiving network coverage",
     "pickup_method": "pickup method",
     "payment_instrument": "payment instrument",
+    "pick-up method": "pickup method",
+    "pick_up_method": "pickup method",
 }
+
+
+# DATE_FORMATS are the source date spellings the loader accepts, in priority order.
+DATE_FORMATS = ("%d/%b/%Y", "%Y-%m-%d")
 
 
 @dataclass(frozen=True)
@@ -85,13 +91,33 @@ def load_dataset(path: str | Path | None = None) -> pd.DataFrame:
     df = pd.read_csv(csv_path)
     df = ensure_supported_columns(df)
 
-    df["date_parsed"] = pd.to_datetime(
-        df.get("date", pd.Series([], dtype=object)),
-        format="%d/%b/%Y",
-        errors="coerce",
-    )
+    df["date_parsed"] = parse_dates(df.get("date", pd.Series([], dtype=object)))
     df["period_order"] = df["period"].map(period_order)
     return df
+
+
+def parse_dates(values: object) -> pd.Series:
+    """Parse source dates, accepting every spelling in ``DATE_FORMATS``.
+
+    The RPW extracts do not agree on a date format: earlier periods use
+    ``24/Jan/2011`` while the audited export and the 2025 periods use ISO
+    ``2011-01-24``.  Each format is tried in turn against the values still
+    unparsed, so a column mixing both resolves completely instead of silently
+    becoming ``NaT``.
+    """
+
+    series = pd.Series(values, dtype=object)
+    parsed = pd.Series(pd.NaT, index=series.index, dtype="datetime64[ns]")
+    for date_format in DATE_FORMATS:
+        remaining = parsed.isna()
+        if not remaining.any():
+            break
+        parsed.loc[remaining] = pd.to_datetime(
+            series.loc[remaining],
+            format=date_format,
+            errors="coerce",
+        )
+    return parsed
 
 
 def period_order(label: str | float | int | None) -> int:
@@ -225,10 +251,8 @@ def ensure_supported_columns(
             raise ValueError(f"Dataset missing required numeric columns: {', '.join(missing)}")
 
     if "date_parsed" not in normalized.columns:
-        normalized["date_parsed"] = pd.to_datetime(
-            normalized.get("date", pd.Series([], dtype=object)),
-            format="%d/%b/%Y",
-            errors="coerce",
+        normalized["date_parsed"] = parse_dates(
+            normalized.get("date", pd.Series([], dtype=object))
         )
     if "period_order" not in normalized.columns:
         normalized["period_order"] = normalized["period"].map(period_order)

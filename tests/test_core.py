@@ -5,7 +5,13 @@ import pytest
 
 from qkash.benchmark import rank_metrics, validate_solver_outputs
 from qkash.classical import simulated_annealing
-from qkash.data import FilterSpec, filter_dataset, prepare_candidates
+from qkash.data import (
+    FilterSpec,
+    ensure_supported_columns,
+    filter_dataset,
+    parse_dates,
+    prepare_candidates,
+)
 from qkash.quantum import (
     DEFAULT_MAX_QUBITS,
     LocalAerBackend,
@@ -263,3 +269,35 @@ def test_qubo_candidate_selection_fills_to_five_after_strict_pareto() -> None:
     assert len(model_candidates) == 5
     assert model_candidates["model_source"].tolist().count("Pareto frontier") == 1
     assert model_candidates["model_source"].tolist().count("Best scored fallback") == 4
+
+
+def test_parse_dates_accepts_both_source_formats() -> None:
+    """The audited export is ISO; older extracts are day/month/year."""
+
+    parsed = parse_dates(
+        pd.Series(["24/Jan/2011", "2011-01-24", "2025-09-03", "not a date", None])
+    )
+
+    assert parsed.iloc[0] == pd.Timestamp("2011-01-24")
+    assert parsed.iloc[1] == pd.Timestamp("2011-01-24")
+    assert parsed.iloc[2] == pd.Timestamp("2025-09-03")
+    assert pd.isna(parsed.iloc[3])
+    assert pd.isna(parsed.iloc[4])
+
+
+def test_hyphenated_pickup_column_is_aliased() -> None:
+    """The audited export names the column ``PICK-UP METHOD``."""
+
+    frame = pd.DataFrame({"PICK-UP METHOD": ["Cash"], "period": ["2025_3Q"]})
+    normalized = ensure_supported_columns(frame, require_numeric=False)
+
+    assert "pickup method" in normalized.columns
+    assert normalized["pickup method"].tolist() == ["Cash"]
+
+
+def test_mixed_date_formats_leave_no_unparsed_rows() -> None:
+    """A column mixing both spellings must resolve completely."""
+
+    parsed = parse_dates(pd.Series(["24/Jan/2011", "2025-09-03"] * 10))
+
+    assert parsed.notna().all()

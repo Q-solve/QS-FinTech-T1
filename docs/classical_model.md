@@ -10,9 +10,9 @@ The model selects exactly one provider/service alternative from a filtered set o
 observations. It is a one-of-N selection over a fixed candidate set. Nothing in this model routes,
 splits, or sequences a transfer.
 
-Source data and its defects are documented in [`data_audit.md`](data_audit.md). The two defects that
-bear directly on this model are the 246 unparsed 2025 dates and the 78% unmapped
-`receiving network coverage` values.
+Source data and its defects are documented in [`data_audit.md`](data_audit.md). The defect that bears
+directly on this model is the absent `receiving network coverage` column, which leaves
+`coverage_score` constant across every row.
 
 ## Pipeline order
 
@@ -39,7 +39,8 @@ Two benchmark amount tiers exist in the source data and are selected by `amount_
 A row is eligible when `firm`, `amount_lcu`, `fee_lcu`, `fx_margin`, and `total_cost_pct` are all
 non-null for the selected tier, and `firm` is a non-empty string. `prepare_candidates` drops
 everything else. The optional `latest_per_firm` flag additionally keeps only the most recent row per
-firm — see the recency warning in the data audit before enabling it.
+firm. This is now safe: `parse_dates` resolves every date in the audited export, so no row carries a
+`NaT` sort key.
 
 ## Objectives and encoding
 
@@ -134,9 +135,9 @@ All three return the same result shape — `algorithm`, `best_index`, `samples`,
 Kenya → Tanzania, pickup method `Cash`, `cc1` tier, default priority query, `TARGET_QUBITS = 5`.
 
 ```
-filtered rows   292
-prepared rows   292
-scored rows     292
+filtered rows   272
+prepared rows   272
+scored rows     272
 Pareto frontier   6
 model candidates  5
 ```
@@ -156,7 +157,7 @@ Exact optimum: candidate 0, objective `0.059218477950031836`, unique.
 - **The reference instance is not a menu of purchasable options.** No period filter is applied by
   default, so the five candidates span 2019_4Q to 2025_3Q. The model compares a 2025 Western Union
   quote against a 2020 one as if both were available today. Set a period range before drawing any
-  commercial conclusion.
+  commercial conclusion. This remains the single largest interpretive hazard in the pipeline.
 - **The time objective does nothing here.** All five candidates are `Less than one hour`, so
   `time_loss` is 0.0 across the model set and the weighted score is decided entirely by fee and FX
   spread. This is common: speed correlates strongly with Pareto optimality.

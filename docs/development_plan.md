@@ -20,10 +20,12 @@ the backend, and the number of runs behind it.
 
 Delivered:
 
-- Full audit of the 4,504-row, 39-column dataset in [`data_audit.md`](data_audit.md), with SHA-256
-  values recorded for both source files.
-- Deterministic load and normalization path in `qkash/data.py`.
-- Both CSVs excluded from version control.
+- Adopted the audited, deduplicated export `data/processed/remittance_east_africa_clean.csv` —
+  4,026 rows, 30 columns — in place of the unaudited 4,504-row extract.
+- Full audit in [`data_audit.md`](data_audit.md), with the SHA-256 recorded.
+- Deterministic load and normalization path in `qkash/data.py`, including multi-format date parsing
+  and the `pick-up method` alias required by this export.
+- CSVs excluded from version control by `data/**/*.csv`.
 
 Outstanding:
 
@@ -33,26 +35,33 @@ Outstanding:
 
 Exit criteria:
 
-- Loading an unmodified CSV reproduces 4,504 rows and 41 columns.
-- Tests confirm zero exact duplicates, corridor codes agreeing with source and destination codes, and
-  the CC1 cost identity holding within 0.01 percentage points.
+- Loading an unmodified CSV reproduces 4,026 rows and 34 columns. **Met.**
+- Zero exact duplicates, corridor codes agreeing with source and destination codes, and the CC1 cost
+  identity holding within 0.01 percentage points. **All three verified in the audit; not yet
+  asserted in code.**
 
 ## Stage 1 — Data defect remediation
 
-**Status: not started. Blocking for any recency-dependent result.**
+**Status: partially delivered by the dataset switch.**
 
-Three open High-severity defects from the audit risk summary:
+Resolved:
 
-- **Date parsing.** 246 rows in `2025_1Q` and `2025_3Q` fail the fixed `%d/%b/%Y` format and receive
-  `NaT`, corrupting `latest_per_firm` and the business-as-usual baseline. Accept both the
-  `24/Jan/2011` and ISO forms.
-- **Coverage vocabulary.** `coverage_score` maps only Nationwide / Major cities / Main city, leaving
-  3,535 rows (78%) on the 0.35 default. Extend the mapping to High / Medium / Low, or make the
-  function raise on an unrecognized value rather than silently defaulting.
+- **Date parsing.** `parse_dates` tries each format in `DATE_FORMATS` against the values still
+  unparsed. The audited export is fully ISO and now yields zero `NaT` values, where the previous
+  fixed `%d/%b/%Y` format would have failed all 4,026 rows.
+- **Duplicate rows.** Removed upstream in the audited export; zero remain.
+- **Null `payment instrument`.** Down from 969 rows (21.5%) to 24 (0.6%).
+
+Still open:
+
 - **Dead `pickup method` filter option.** `unique_values` splits values on commas to build the
   dropdown, so `Mobile, Cash` contributes a standalone `Mobile` option, but `_filter_exact` compares
   against the whole raw string and never matches it. Route `pickup method` through `_filter_token`
-  as `payment instrument` and `access point` already are.
+  as `payment instrument` already is.
+- **Absent coverage field.** `receiving network coverage` does not exist in this export, so
+  `coverage_score` returns 0.35 for every row. Either source the field or remove it from the model
+  and the UI candidate table. Currently latent, since no objective reads it.
+- **Absent `access point` field.** Same situation; the sidebar does not offer this filter.
 
 Also in scope, at Medium severity:
 
@@ -61,10 +70,10 @@ Also in scope, at Medium severity:
 
 Exit criteria:
 
-- Zero `NaT` values in `date_parsed` for a clean load.
+- Zero `NaT` values in `date_parsed` for a clean load. **Met.**
 - No candidate carries a defaulted `coverage_score` without an explicit flag.
 - Every option `unique_values` offers for a field returns at least one row when selected.
-- Tests cover both date formats, every coverage vocabulary value, and dropdown/filter agreement.
+- Tests cover both date formats and dropdown/filter agreement.
 
 ## Stage 2 — Objective and normalization specification
 

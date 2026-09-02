@@ -27,6 +27,7 @@ Thumbs.db
 .~lock*
 
 # Source datasets must never be committed. Obtain them per docs/data_audit.md.
+data/**/*.csv
 data/*.csv
 data/raw/
 
