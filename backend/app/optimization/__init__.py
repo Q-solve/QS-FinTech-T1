@@ -1,1 +1,1 @@
-"""Data preparation utilities; optimization algorithms are intentionally absent."""
+"""Validated data preparation and classical provider-selection baselines."""
