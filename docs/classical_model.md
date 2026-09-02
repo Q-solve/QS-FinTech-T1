@@ -1,194 +1,115 @@
-# Validated classical provider/service-selection model
+# Classical provider/service-selection model
 
-This document specifies the objective, normalization, and classical algorithms that QKash uses, and
-records a reproducible reference instance. It describes the code in `qkash/data.py`,
-`qkash/scoring.py`, and `qkash/classical.py` as implemented.
+This document specifies the classical model that QKash uses before building the verified compact
+QUBO.
 
-## Scope and data provenance
+## Scope
 
-The model selects exactly one provider/service alternative from a filtered set of direct-corridor
-observations. It is a one-of-N selection over a fixed candidate set. Nothing in this model routes,
-splits, or sequences a transfer.
+QKash selects an eligible direct remittance option for a source country, destination country, and
+transfer amount. The dataset supports provider/service selection; it does not contain route
+sequences, intermediate legs, capacities, or edge compatibility for true network routing.
 
-Source data and its defects are documented in [`data_audit.md`](data_audit.md). The defect that bears
-directly on this model is the absent `receiving network coverage` column, which leaves
-`coverage_score` constant across every row.
+In normal mode one candidate row is one provider/payment/receiving-method service. In batch research
+mode one candidate row is a feasible plan assigning several same-context transfers to services.
 
 ## Pipeline order
 
-The order is fixed and enforced by test:
+The order is fixed and covered by tests:
 
-1. `load_dataset` — read CSV, normalize labels, derive `date_parsed` and `period_order`.
-2. `filter_dataset` — apply every user filter.
-3. `prepare_candidates` — select the amount tier and build numeric features.
-4. `score_candidates` — normalize objectives and compute the weighted score.
-5. `select_qubo_candidates` — Pareto prune, then backfill to a fixed model size.
-6. Solve.
+1. `load_dataset` reads the CSV once through Streamlit cache.
+2. `filter_dataset` filters source and destination.
+3. `match_transfer_amount` selects the closest RPW benchmark tier.
+4. `prepare_candidates` builds amount-specific fee, FX, total-cost, speed, settlement-day, coverage,
+   and transparency features.
+5. `latest_service_options` keeps the latest observation per provider/payment/receiving method.
+6. `add_objective_losses` computes lower-is-better loss columns.
+7. `apply_policy_constraints` applies hard eligibility constraints.
+8. `pareto_prune` removes dominated rows.
+9. `infer_use_case_policy` runs K-Means profiling and Random Forest policy inference.
+10. `score_candidates` computes the final weighted score.
+11. `select_qubo_candidates` caps the model set.
+12. `build_batch_plans` optionally creates provider-constrained multi-transfer plans.
 
-Filtering precedes pruning because Pareto dominance is only meaningful within an eligible comparison
-set. `tests/test_core.py::test_filtering_happens_before_pareto_pruning` fails if the order is
-inverted.
+Filtering and hard eligibility constraints happen before Pareto pruning because dominance is only
+meaningful inside the eligible comparison set.
 
-## Benchmarks and eligibility
+## Eligibility
 
-Two benchmark amount tiers exist in the source data and are selected by `amount_tier`:
+Rows must have non-null `firm`, `amount_lcu`, `fee_lcu`, `fx_margin`, and `total_cost_pct` for the
+selected tier. `firm` must be non-empty. The loader does not silently discard negative FX margins,
+zero fees, or known CC2 inconsistencies; those remain source facts.
 
-- `cc1` — 200 denomination units.
-- `cc2` — 500 denomination units.
+Hard policy constraints can then require:
 
-A row is eligible when `firm`, `amount_lcu`, `fee_lcu`, `fx_margin`, and `total_cost_pct` are all
-non-null for the selected tier, and `firm` is a non-empty string. `prepare_candidates` drops
-everything else. The optional `latest_per_firm` flag additionally keeps only the most recent row per
-firm. This is now safe: `parse_dates` resolves every date in the audited export, so no row carries a
-`NaT` sort key.
+- `total_cost_pct <= max_total_cost_pct`;
+- `settlement_days <= max_settlement_days`;
+- transparent pricing when `require_transparency` is true;
+- `coverage_score >= min_coverage_score` when coverage is sourced;
+- membership in allowed access points when access point is sourced.
 
-## Objectives and encoding
+The current audited export does not include `receiving network coverage` or `access point`.
+`apply_policy_constraints` reports those optional constraints as unsupported instead of filtering on
+empty compatibility columns.
 
-Three objectives, all encoded as lower-is-better losses in `[0, 1]`:
+## Objectives
 
-| Objective | Source column | Loss |
-| --- | --- | --- |
-| Transaction fee | `{tier} lcu fee` | `_minmax_loss(fee_lcu)` |
-| Transfer time | `speed actual` | `1 - clip(speed_score, 0, 1)` |
-| FX spread | `{tier} fx margin` | `_minmax_loss(fx_margin)` |
+The weighted objective minimizes lower-is-better losses:
 
-Transfer time is not a duration. It is the ordinal `speed_score` mapping from the data audit,
-inverted so that faster is lower. The five speed bands therefore produce only five distinct
-`time_loss` values: 0.00, 0.18, 0.38, 0.58, 0.82.
+| Loss | Source |
+| --- | --- |
+| `transaction_fee_loss` | Min-max normalized `fee_lcu`. |
+| `fx_spread_loss` | Min-max normalized `fx_margin`. |
+| `time_loss` | `1 - speed_score`, where faster speed labels score higher. |
+| `risk_loss` | Average of sourced transparency, coverage, and access-point losses. |
 
-`total_cost_pct` is deliberately **not** a fourth objective. It is definitionally
-`fee / amount * 100 + fx margin`, so including it alongside the fee and FX-spread objectives would
-double-count both.
+If a risk field is absent or empty, that component is inactive. For the current audited export,
+transparency contributes to risk; coverage and access point remain inactive until added to the data.
 
-## Normalization and weights
+`total_cost_pct` is used as a hard policy limit, not as another weighted objective, because it is
+derived from fee and FX margin and would double-count them.
 
-`_minmax_loss` fills nulls with the column median, then maps the column linearly onto `[0, 1]`. When
-the maximum equals the minimum it returns all zeros, so a constant objective contributes nothing
-rather than dividing by zero.
+## Internal policy inference
 
-Normalization is computed **over the whole filtered pool**, before Pareto pruning and before the
-model subset is chosen. A loss value is therefore relative to every eligible row in the corridor,
-not to the five rows that reach the QUBO. This keeps scores comparable across runs with the same
-filter but means the modelled candidates rarely span the full `[0, 1]` range.
+The user does not enter objective weights. `qkash/profiling.py` first clusters the eligible services
+with K-Means, assigns semantic service-profile labels, then trains a Random Forest classifier on
+those cluster-derived labels. The inferred profile selects internal weights over transaction fee,
+FX spread, settlement time, and sourced risk.
 
-Weights come from `parse_weight_query`, then `normalize_weights` clamps negatives to zero and scales
-the three weights to sum to one. The parser supports two forms:
+These labels are pseudo-supervised because the dataset has no true consumer use-case labels. They
+are useful for exploratory research, not for regulated eligibility decisions.
 
-- **Keyword intent** — each objective scores one point per matching keyword substring found in the
-  query, and its weight becomes `0.05 + hits`.
-- **Explicit override** — `fee=0.5 time=0.3 fx=0.2` sets a weight directly by regex.
+## Mathematical selection
 
-An empty query, or one whose weights sum to zero, falls back to `DEFAULT_WEIGHTS`
-(0.34 / 0.33 / 0.33).
+For `n` model candidates with weighted scores `s_i`:
 
-**Known quirk.** Keyword counting is by substring, and the three keyword lists are not the same
-length, so a query that reads as balanced is not. The shipped default,
-`"low transaction fee, fast transfer time, low FX spread"`, matches two fee keywords, two time
-keywords, and three FX keywords, producing weights of **0.2867 / 0.2867 / 0.4266**. FX spread is
-weighted 49% higher than the other two objectives out of the box. Use the sidebar sliders or an
-explicit override when a specific weighting is intended.
-
-## Pareto pruning and model selection
-
-`pareto_prune` removes any candidate that some other candidate matches or beats on all three loss
-dimensions and strictly beats on at least one, with a `1e-12` tolerance.
-
-Strict pruning often leaves fewer than `TARGET_QUBITS` rows. `select_qubo_candidates` then fills the
-remaining slots with the next-best scored rows from the already-filtered pool and marks them
-`Best scored fallback` in the `model_source` column; frontier rows are marked `Pareto frontier`.
-Every qubit still maps to a real observation. `app.py` surfaces the fallback count in the UI and
-refuses to run when fewer than `TARGET_QUBITS` real candidates exist.
-
-## Mathematical formulation
-
-Let `C` be the modelled candidate set, `|C| = n`, and `s_i` the weighted score of candidate `i`.
-
-```
+```text
 minimize    sum_i s_i * x_i
 subject to  sum_i x_i = 1
             x_i in {0, 1}
 ```
 
-`solve_original_exact` solves this by direct minimum: the optimum is `min(s)`, and all indices within
-`numpy.isclose` of that minimum are returned as co-optimal. This is O(n) and exact. The QUBO and
-QAOA layers exist to study the formulation, not because this problem is hard.
-
-## Deterministic ties
-
-Every sort in the pipeline uses `kind="mergesort"` — a stable sort — so ties resolve by prior order
-rather than arbitrarily. `solve_original_exact` returns the full co-optimal index list in
-`indices` and the first as `index`. Metric ranking treats a hit on any co-optimal index as a hit.
+`solve_original_exact` solves this by direct minimum and returns every co-optimal index. This is
+O(n), exact, and expected to beat QAOA on small single-transfer instances.
 
 ## Classical algorithms
 
 | Algorithm | Function | Role |
 | --- | --- | --- |
-| Business as usual | `business_as_usual_baseline` | Non-optimization control. Picks the most frequently observed firm in the filtered set, then that firm's best-scored row. Represents staying with the incumbent. |
-| Exact mathematical baseline | `exact_mathematical_baseline` | Ground truth. Wraps `solve_original_exact`. |
-| Simulated annealing | `simulated_annealing` | Stochastic QUBO baseline. Metropolis single-bit flips, geometric cooling from `max(1, penalty + max(scores))` to `1e-3`, default 128 reads × 600 sweeps. |
+| Business as usual | `business_as_usual_baseline` | Non-optimization control. Picks the most frequently observed firm, then that firm's best-scored row. |
+| Exact mathematical baseline | `exact_mathematical_baseline` | Ground truth wrapper around `solve_original_exact`. |
+| Lowest-fee heuristic | `lowest_fee_heuristic` | Picks the lowest transaction fee, then weighted score as tie-breaker. |
+| Fastest-transfer heuristic | `fastest_transfer_heuristic` | Picks the lowest time loss, then weighted score as tie-breaker. |
+| Lowest-FX heuristic | `lowest_fx_heuristic` | Picks the lowest FX-spread loss, then weighted score as tie-breaker. |
+| Simulated annealing | `simulated_annealing` | Stochastic compact-QUBO sampler using Metropolis single-bit flips. |
 
-All three return the same result shape — `algorithm`, `best_index`, `samples`, `runtime_s` — so
-`summarize_samples` can score them identically against the QAOA output.
-
-## Reference instance
-
-Kenya → Tanzania, pickup method `Cash`, `cc1` tier, default priority query, `TARGET_QUBITS = 5`.
-
-```
-filtered rows   272
-prepared rows   272
-scored rows     272
-Pareto frontier   6
-model candidates  5
-```
-
-| # | Firm | Period | Speed | Fee (LCU) | FX margin | Fee loss | Time loss | FX loss | Score | Source |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 0 | Western Union | 2025_3Q | < 1 hour | 207.0 | -0.69 | 0.034052 | 0.0 | 0.115936 | **0.059218** | Pareto frontier |
-| 1 | Western Union | 2020_2Q | < 1 hour | 1320.0 | -3.52 | 0.217145 | 0.0 | 0.000000 | 0.062258 | Pareto frontier |
-| 2 | M-Pesa | 2020_2Q | < 1 hour | 100.0 | 0.29 | 0.016450 | 0.0 | 0.156084 | 0.071298 | Pareto frontier |
-| 3 | MoneyGram | 2019_4Q | < 1 hour | 30.0 | 1.59 | 0.004935 | 0.0 | 0.209340 | 0.090714 | Pareto frontier |
-| 4 | M-Pesa | 2021_4Q | < 1 hour | 0.0 | 3.17 | 0.000000 | 0.0 | 0.274068 | 0.116910 | Pareto frontier |
-
-Exact optimum: candidate 0, objective `0.059218477950031836`, unique.
+All solvers return the same result shape: `algorithm`, `best_index`, `samples`, and `runtime_s`.
+`validate_solver_outputs` checks those samples before metrics are reported.
 
 ## Limitations
 
-- **The reference instance is not a menu of purchasable options.** No period filter is applied by
-  default, so the five candidates span 2019_4Q to 2025_3Q. The model compares a 2025 Western Union
-  quote against a 2020 one as if both were available today. Set a period range before drawing any
-  commercial conclusion. This remains the single largest interpretive hazard in the pipeline.
-- **The time objective does nothing here.** All five candidates are `Less than one hour`, so
-  `time_loss` is 0.0 across the model set and the weighted score is decided entirely by fee and FX
-  spread. This is common: speed correlates strongly with Pareto optimality.
-- **Candidate 1 wins its FX score through a -3.52 promotional margin.** Section
-  [Cost consistency and validity](data_audit.md#cost-consistency-and-validity) explains why that is
-  not a durable price.
-- **The same provider occupies three of five slots.** Western Union and M-Pesa take four. A
-  five-qubit model over near-duplicate rows is a smaller decision than its size suggests.
-- **One-of-N selection is classically trivial.** `solve_original_exact` answers it in O(n). Any
-  research claim must come from a harder formulation — multiple transactions, capacities, budgets,
-  or diversification constraints — not from this instance.
-
-## Reproducible command
-
-```bash
-python - <<'PY'
-from qkash.data import load_dataset, FilterSpec, filter_dataset, prepare_candidates
-from qkash.scoring import (
-    parse_weight_query, score_candidates, select_qubo_candidates, solve_original_exact,
-)
-
-raw = load_dataset()
-weights = parse_weight_query("low transaction fee, fast transfer time, low FX spread")
-spec = FilterSpec(source_name="Kenya", destination_name="Tanzania", pickup_method="Cash")
-scored = score_candidates(prepare_candidates(filter_dataset(raw, spec), amount_tier="cc1"), weights)
-model, pruned = select_qubo_candidates(scored, 5)
-
-print(len(pruned), len(model))
-print(model[["firm", "period", "weighted_score", "model_source"]].to_string(index=False))
-print(solve_original_exact(model["weighted_score"]))
-PY
-```
-
-Requires only pandas and numpy.
+- One-of-N selection is classically trivial. The research value comes from larger batch instances,
+  policy constraints, provider concentration limits, repeated seeds, and runtime accounting.
+- Current batch mode repeats the same source/destination/amount request several times; it is a
+  research stressor, not a full production treasury scheduler.
+- Coverage and access-point constraints become meaningful only after those fields are added to the
+  dataset with real values.

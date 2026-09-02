@@ -10,6 +10,8 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
+from .scoring import decode_candidate_index, index_to_bits, required_qubits
+
 
 # Variable descriptions.
 # EPSILON prevents divide-by-zero when a best objective is exactly zero.
@@ -28,7 +30,7 @@ METRIC_RANKING_RULE = (
 
 
 def one_hot_index(bits: Iterable[int]) -> int | None:
-    """Return the selected index if the bitstring is feasible."""
+    """Return the selected index for legacy one-hot bitstrings."""
 
     vector = [int(bit) for bit in bits]
     if sum(vector) != 1:
@@ -37,11 +39,11 @@ def one_hot_index(bits: Iterable[int]) -> int | None:
 
 
 def sample_from_bits(bits: Iterable[int], scores: Iterable[float]) -> dict[str, object]:
-    """Convert a raw bitstring into the common benchmark sample shape."""
+    """Convert compact binary-index bits into the common benchmark sample shape."""
 
     bit_list = [int(bit) for bit in bits]
     score_vector = list(scores)
-    index = one_hot_index(bit_list)
+    index = decode_candidate_index(bit_list, len(score_vector))
     objective = float(score_vector[index]) if index is not None else None
     return {
         "bits": bit_list,
@@ -52,11 +54,10 @@ def sample_from_bits(bits: Iterable[int], scores: Iterable[float]) -> dict[str, 
 
 
 def deterministic_sample(index: int, scores: Iterable[float]) -> dict[str, object]:
-    """Create a one-hot sample for deterministic algorithms."""
+    """Create a compact binary-index sample for deterministic algorithms."""
 
     score_vector = list(scores)
-    bits = [0] * len(score_vector)
-    bits[int(index)] = 1
+    bits = index_to_bits(int(index), required_qubits(len(score_vector)))
     return sample_from_bits(bits, score_vector)
 
 
@@ -212,14 +213,15 @@ def validate_solver_result(
             continue
 
         bits = sample.get("bits")
-        if not isinstance(bits, list) or len(bits) != len(scores):
+        expected_bit_length = required_qubits(len(scores))
+        if not isinstance(bits, list) or len(bits) != expected_bit_length:
             issues.append(f"sample {sample_number} has invalid bit length")
             continue
         if any(bit not in {0, 1} for bit in bits):
             issues.append(f"sample {sample_number} has non-binary values")
             continue
 
-        expected_index = one_hot_index(bits)
+        expected_index = decode_candidate_index(bits, len(scores))
         reported_index = sample.get("index")
         reported_feasible = bool(sample.get("feasible", False))
 

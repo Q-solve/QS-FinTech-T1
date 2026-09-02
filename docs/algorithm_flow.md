@@ -21,12 +21,17 @@ point, objective weights, or a priority query.
    RPW tier, currently `cc1` or `cc2`.
 3. `filter_dataset` filters the dataset by source and destination.
 4. `prepare_candidates` builds amount-specific numeric fields:
-   `fee_lcu`, `fx_margin`, `total_cost_pct`, and `speed_score`.
+   `fee_lcu`, `fx_margin`, `total_cost_pct`, `speed_score`, and
+   `settlement_days`.
 5. `latest_service_options` keeps the latest observation for each provider,
    payment instrument, and receiving method.
-6. `add_objective_losses` computes lower-is-better fee, FX-spread, and
-   settlement-time losses.
-7. `pareto_prune` removes services dominated on all three losses before any
+6. `add_objective_losses` computes lower-is-better fee, FX-spread,
+   settlement-time, and sourced-risk losses. Coverage and access-point losses
+   stay inactive unless those fields are present and non-empty in the CSV.
+7. `apply_policy_constraints` removes services that violate configured cost,
+   settlement-time, transparency, coverage, or access-point limits. Unsupported
+   optional constraints are reported instead of silently applied.
+8. `pareto_prune` removes services dominated on the available losses before any
    weighting is applied.
 
 ## ML Policy Inference
@@ -41,7 +46,7 @@ point, objective weights, or a priority query.
 5. The classifier's average probability across the current candidate set selects
    the transaction use-case profile.
 6. The selected profile determines internal weights for transaction fee,
-   FX spread, and settlement time.
+   FX spread, settlement time, and sourced risk.
 
 Because the dataset has no explicit consumer-use-case labels, the Random Forest
 is pseudo-supervised by K-Means output. This is suitable for exploratory
@@ -49,7 +54,7 @@ research, not a production credit or eligibility decision.
 
 ## Optimization Model
 
-The current constrained model recommends one service option:
+The default constrained model recommends one service option:
 
 ```text
 minimize    sum_i weighted_score_i * x_i
@@ -57,9 +62,14 @@ subject to  sum_i x_i = 1
             x_i in {0, 1}
 ```
 
-Each binary variable maps to one candidate service and therefore to one QAOA
-qubit. `MODEL_CANDIDATE_CAP` limits the maximum number of candidate services
-sent to the QUBO.
+Research settings can also build batch plans by assigning several same-context
+transfers to eligible services while enforcing a maximum provider-concentration
+share. Each batch plan is then treated as one candidate row.
+
+The QUBO uses compact binary-index encoding: `n` candidate rows require
+`ceil(log2(n))` qubits, and measured basis states above `n - 1` are infeasible.
+`MODEL_CANDIDATE_CAP` limits the maximum number of model candidates sent to the
+QUBO.
 
 Before QAOA runs, `verify_qubo_equivalence` checks that the QUBO optimum matches
 the exact optimum of the original constrained model. Failure aborts quantum

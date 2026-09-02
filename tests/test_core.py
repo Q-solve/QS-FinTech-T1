@@ -4,7 +4,9 @@ import pandas as pd
 import pytest
 
 from qkash.benchmark import rank_metrics, validate_solver_outputs
+from qkash.batch import BatchSettings, build_batch_plans
 from qkash.classical import simulated_annealing
+from qkash.constraints import PolicyConstraints, apply_policy_constraints
 from qkash.data import (
     FilterSpec,
     ensure_supported_columns,
@@ -13,6 +15,7 @@ from qkash.data import (
     match_transfer_amount,
     parse_dates,
     prepare_candidates,
+    settlement_days,
 )
 from qkash.profiling import infer_use_case_policy
 from qkash.quantum import (
@@ -26,6 +29,7 @@ from qkash.scoring import (
     add_objective_losses,
     build_selection_qubo,
     pareto_prune,
+    required_qubits,
     score_candidates,
     select_qubo_candidates,
     verify_qubo_equivalence,
@@ -189,11 +193,36 @@ def test_qaoa_returns_circuit_diagram() -> None:
     assert result["status"] == "ok"
     assert result["optimization_backend"] == "LocalAerBackend"
     assert result["execution_backend"] == "LocalAerBackend"
-    assert result["circuit_num_qubits"] == 2
+    assert result["circuit_num_qubits"] == 1
+    assert result["candidate_count"] == 2
+    assert result["basis_state_count"] == 2
     assert result["circuit_depth"] > 0
     assert len(result["samples"]) == 8
     assert "circuit_diagram" in result
-    assert "q_0" in result["circuit_diagram"]
+    assert "Rz" in result["circuit_diagram"]
+
+
+def test_qaoa_circuit_iterations_aggregate_samples() -> None:
+    pytest.importorskip("qiskit")
+    pytest.importorskip("qiskit_aer")
+    qubo = build_selection_qubo([0.1, 0.3], penalty=2.0)
+    result = run_qaoa(
+        qubo,
+        reps=1,
+        shots=4,
+        max_qubits=2,
+        seed=11,
+        optimizer_maxiter=4,
+        execution_iterations=3,
+        backend_name="local_aer",
+    )
+
+    assert result["status"] == "ok"
+    assert result["execution_iterations"] == 3
+    assert result["shots_per_iteration"] == 4
+    assert result["total_shots"] == 12
+    assert sum(result["measurement_counts"].values()) == 12
+    assert len(result["samples"]) == 12
 
 
 def test_quantum_backend_architecture() -> None:
@@ -255,6 +284,19 @@ def test_metric_ranking_uses_runtime_as_quality_tie_breaker() -> None:
 
 def test_qaoa_default_max_qubits_is_twenty() -> None:
     assert DEFAULT_MAX_QUBITS == 20
+
+
+def test_nine_candidates_use_four_binary_index_qubits() -> None:
+    qubo = build_selection_qubo([0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1])
+    verification = verify_qubo_equivalence(qubo)
+
+    assert required_qubits(9) == 4
+    assert qubo.size == 4
+    assert qubo.candidate_count == 9
+    assert qubo.state_count == 16
+    assert qubo.invalid_state_count == 7
+    assert verification["equivalent"] is True
+    assert verification["qubo_indices"] == [8]
 
 
 def test_qubo_candidate_selection_uses_pareto_frontier_by_default() -> None:
@@ -327,8 +369,121 @@ def test_profile_policy_is_inferred_without_user_weights() -> None:
     profiled, inference = infer_use_case_policy(losses, transfer_amount=200.0, random_state=7)
 
     assert "service_profile_label" in profiled.columns
-    assert set(inference.weights) == {"transaction_fee", "time", "fx_spread"}
+    assert set(inference.weights) == {"transaction_fee", "time", "fx_spread", "risk"}
     assert sum(inference.weights.values()) == pytest.approx(1.0)
+
+
+def test_objective_losses_include_risk_loss() -> None:
+    prepared = prepare_candidates(
+        filter_dataset(sample_dataframe(), FilterSpec(source_name="Kenya", destination_name="Uganda")),
+        amount_tier="cc1",
+    )
+    losses = add_objective_losses(prepared)
+
+    assert "risk_loss" in losses.columns
+    assert "coverage_loss" in losses.columns
+    assert "transparency_loss" in losses.columns
+    assert "access_point_loss" in losses.columns
+    assert losses["risk_loss"].between(0.0, 1.0).all()
+
+
+def test_missing_optional_risk_fields_do_not_create_synthetic_risk() -> None:
+    source = sample_dataframe().drop(
+        columns=["receiving network coverage", "access point"],
+    )
+    prepared = prepare_candidates(
+        filter_dataset(source, FilterSpec(source_name="Kenya", destination_name="Uganda")),
+        amount_tier="cc1",
+    )
+    losses = add_objective_losses(prepared)
+
+    assert losses["coverage_loss"].eq(0.0).all()
+    assert losses["access_point_loss"].eq(0.0).all()
+    assert losses["risk_component_count"].eq(1).all()
+    assert losses["risk_components"].eq("transparency").all()
+    assert losses["risk_loss"].tolist() == pytest.approx([0.0, 1.0])
+
+
+def test_missing_optional_policy_fields_are_reported_not_filtered() -> None:
+    source = sample_dataframe().drop(
+        columns=["receiving network coverage", "access point"],
+    )
+    prepared = prepare_candidates(
+        filter_dataset(source, FilterSpec(source_name="Kenya", destination_name="Uganda")),
+        amount_tier="cc1",
+    )
+    losses = add_objective_losses(prepared)
+    constrained, report = apply_policy_constraints(
+        losses,
+        PolicyConstraints(
+            min_coverage_score=1.0,
+            allowed_access_points=("Bank branch",),
+        ),
+    )
+
+    assert len(constrained) == 2
+    assert report["removed_rows"] == 0
+    assert "network_coverage_policy" in report["unsupported_constraints"]
+    assert "access_point_policy" in report["unsupported_constraints"]
+
+
+def test_policy_constraints_filter_cost_time_transparency_and_coverage() -> None:
+    prepared = prepare_candidates(
+        filter_dataset(sample_dataframe(), FilterSpec(source_name="Kenya", destination_name="Uganda")),
+        amount_tier="cc1",
+    )
+    losses = add_objective_losses(prepared)
+    constrained, report = apply_policy_constraints(
+        losses,
+        PolicyConstraints(
+            max_total_cost_pct=2.0,
+            max_settlement_days=1.0,
+            require_transparency=True,
+            min_coverage_score=0.9,
+        ),
+    )
+
+    assert constrained["firm"].tolist() == ["FastCash"]
+    assert report["eligible_rows"] == 1
+    assert report["removed_rows"] == 1
+
+
+def test_policy_constraints_filter_access_points() -> None:
+    prepared = prepare_candidates(
+        filter_dataset(sample_dataframe(), FilterSpec(source_name="Kenya", destination_name="Uganda")),
+        amount_tier="cc1",
+    )
+    losses = add_objective_losses(prepared)
+    constrained, _report = apply_policy_constraints(
+        losses,
+        PolicyConstraints(allowed_access_points=("Bank branch",)),
+    )
+
+    assert constrained["firm"].tolist() == ["SlowBank"]
+
+
+def test_batch_provider_concentration_limits_repeated_provider() -> None:
+    prepared = prepare_candidates(
+        filter_dataset(sample_dataframe(), FilterSpec(source_name="Kenya", destination_name="Uganda")),
+        amount_tier="cc1",
+    )
+    scored = score_candidates(
+        add_objective_losses(prepared),
+        {"transaction_fee": 1.0, "risk": 0.0},
+    )
+    plans, report = build_batch_plans(
+        scored,
+        BatchSettings(transfer_count=2, max_provider_share=0.5, candidate_cap=2, plan_cap=8),
+    )
+
+    assert report["provider_limit"] == 1
+    assert len(plans) == 1
+    assert plans.iloc[0]["batch_provider_counts"] == {"FastCash": 1, "SlowBank": 1}
+
+
+def test_settlement_days_maps_speed_labels_to_policy_values() -> None:
+    assert settlement_days("Less than one hour") == pytest.approx(1.0 / 24.0)
+    assert settlement_days("3-5 days") == 5.0
 
 
 def test_parse_dates_accepts_both_source_formats() -> None:

@@ -124,20 +124,24 @@ def run_qaoa(
     max_qubits: int = DEFAULT_MAX_QUBITS,
     seed: int | None = None,
     optimizer_maxiter: int = 80,
+    execution_iterations: int = 1,
     backend_name: str = "local_aer",
     qbraid_device_id: str | None = None,
     qbraid_timeout_s: int = 300,
 ) -> dict[str, object]:
-    """Optimize QAOA parameters locally, then execute the final circuit once."""
+    """Optimize QAOA parameters locally, then execute the final circuit repeatedly."""
 
     started = time.perf_counter()
     if qubo.size > max_qubits:
         return _failed_qaoa_result(
             started,
             "skipped",
-            f"QUBO has {qubo.size} variables; max_qubits is {max_qubits}.",
+            f"QUBO needs {qubo.size} qubits for {qubo.candidate_count} candidates; "
+            f"max_qubits is {max_qubits}.",
         )
 
+    iteration_count = max(int(execution_iterations), 1)
+    shots_per_iteration = max(int(shots), 1)
     rng = np.random.default_rng(seed)
     local_optimizer_backend = LocalAerBackend(seed=seed)
     linear, quadratic = qubo_to_ising(qubo)
@@ -162,54 +166,82 @@ def run_qaoa(
         measured=True,
     )
     circuit_diagram = str(final_circuit.draw(output="text"))
-    execution_backend = create_quantum_backend(
-        backend_name,
-        seed=seed,
-        qbraid_device_id=qbraid_device_id,
-        qbraid_timeout_s=qbraid_timeout_s,
-    )
 
+    execution_backend_name = backend_name
+    combined_counts: dict[str, int] = {}
+    backend_runtime_s = 0.0
+    execution_notes: list[str] = []
+    job_ids: list[str] = []
     try:
-        backend_result = execution_backend.execute(final_circuit, shots=max(int(shots), 1))
+        for iteration in range(iteration_count):
+            execution_backend = create_quantum_backend(
+                backend_name,
+                seed=_iteration_seed(seed, iteration),
+                qbraid_device_id=qbraid_device_id,
+                qbraid_timeout_s=qbraid_timeout_s,
+            )
+            execution_backend_name = execution_backend.name
+            backend_result = execution_backend.execute(final_circuit, shots=shots_per_iteration)
+            combined_counts = _merge_counts(combined_counts, backend_result.counts)
+            backend_runtime_s += backend_result.runtime_s
+            if backend_result.note and backend_result.note not in execution_notes:
+                execution_notes.append(backend_result.note)
+            if backend_result.job_id:
+                job_ids.append(str(backend_result.job_id))
     except Exception as exc:
         return {
             **_failed_qaoa_result(
                 started,
                 "failed",
-                f"{execution_backend.name} execution failed: {exc}",
+                f"{execution_backend_name} execution failed: {exc}",
             ),
             "parameters": params.tolist(),
             "best_energy_expectation": expectation,
             "optimization_backend": local_optimizer_backend.name,
-            "execution_backend": execution_backend.name,
+            "execution_backend": execution_backend_name,
+            "execution_iterations": iteration_count,
+            "shots_per_iteration": shots_per_iteration,
+            "total_shots": shots_per_iteration * iteration_count,
             "circuit_diagram": circuit_diagram,
             "circuit_depth": final_circuit.depth(),
             "circuit_width": final_circuit.width(),
             "circuit_num_qubits": final_circuit.num_qubits,
             "circuit_gate_counts": dict(final_circuit.count_ops()),
+            "candidate_count": qubo.candidate_count,
+            "basis_state_count": qubo.state_count,
+            "invalid_state_count": qubo.invalid_state_count,
         }
 
-    samples = _samples_from_counts(backend_result.counts, qubo)
+    samples = _samples_from_counts(combined_counts, qubo)
     return {
         "algorithm": "QAOA",
-        "status": backend_result.status,
+        "status": "ok",
         "samples": samples,
         "runtime_s": time.perf_counter() - started,
-        "backend_runtime_s": backend_result.runtime_s,
+        "backend_runtime_s": backend_runtime_s,
         "best_energy_expectation": expectation,
         "parameters": params.tolist(),
         "optimization_backend": local_optimizer_backend.name,
-        "execution_backend": backend_result.backend_name,
-        "measurement_counts": backend_result.counts,
-        "job_id": backend_result.job_id,
+        "execution_backend": execution_backend_name,
+        "execution_iterations": iteration_count,
+        "shots_per_iteration": shots_per_iteration,
+        "total_shots": shots_per_iteration * iteration_count,
+        "measurement_counts": combined_counts,
+        "job_id": job_ids[-1] if job_ids else None,
+        "job_ids": job_ids,
         "circuit_diagram": circuit_diagram,
         "circuit_depth": final_circuit.depth(),
         "circuit_width": final_circuit.width(),
         "circuit_num_qubits": final_circuit.num_qubits,
         "circuit_gate_counts": dict(final_circuit.count_ops()),
+        "candidate_count": qubo.candidate_count,
+        "basis_state_count": qubo.state_count,
+        "invalid_state_count": qubo.invalid_state_count,
         "note": (
-            f"Optimized gamma/beta locally with Qiskit Aer using {optimizer_name}; "
-            f"{backend_result.note}"
+            f"Optimized compact binary-index QAOA gamma/beta locally with Qiskit Aer "
+            f"using {optimizer_name}; "
+            f"executed final circuit {iteration_count} time(s) with "
+            f"{shots_per_iteration} shots each. {' '.join(execution_notes)}"
         ),
     }
 
@@ -361,6 +393,23 @@ def _samples_from_counts(counts: dict[str, int], qubo: QuboModel) -> list[dict[s
         sample["energy"] = qubo.energy(bits)
         samples.extend([sample] * int(count))
     return samples
+
+
+def _merge_counts(left: dict[str, int], right: dict[str, int]) -> dict[str, int]:
+    """Combine measurement counts from repeated circuit executions."""
+
+    merged = dict(left)
+    for bitstring, count in right.items():
+        merged[bitstring] = merged.get(bitstring, 0) + int(count)
+    return merged
+
+
+def _iteration_seed(seed: int | None, iteration: int) -> int | None:
+    """Use reproducible but distinct simulator seeds for repeated executions."""
+
+    if seed is None:
+        return None
+    return int(seed) + int(iteration)
 
 
 def _extract_qbraid_counts(result: object, num_qubits: int) -> dict[str, int]:

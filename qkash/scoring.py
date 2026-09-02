@@ -10,13 +10,16 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
+from qkash.data import source_column_available
+
 
 # Variable descriptions.
-# DEFAULT_WEIGHTS controls the three user-adjustable optimization priorities.
+# DEFAULT_WEIGHTS controls the internal optimization priorities.
 DEFAULT_WEIGHTS: dict[str, float] = {
-    "transaction_fee": 0.34,
-    "time": 0.33,
-    "fx_spread": 0.33,
+    "transaction_fee": 0.30,
+    "time": 0.27,
+    "fx_spread": 0.28,
+    "risk": 0.15,
 }
 
 # LOSS_COLUMNS are the lower-is-better objective columns used for Pareto pruning.
@@ -24,6 +27,7 @@ LOSS_COLUMNS = (
     "transaction_fee_loss",
     "time_loss",
     "fx_spread_loss",
+    "risk_loss",
 )
 
 # CANDIDATE_POOL_INDEX_COLUMN keeps scored rows uniquely identifiable after pruning.
@@ -34,22 +38,44 @@ MODEL_SOURCE_COLUMN = "model_source"
 
 @dataclass(frozen=True)
 class QuboModel:
-    """Upper-triangular QUBO matrix for the one-provider selection model."""
+    """Upper-triangular QUBO matrix for compact binary-index service selection."""
 
     matrix: np.ndarray
     offset: float
     penalty: float
     scores: np.ndarray
     labels: tuple[str, ...] = ()
+    candidate_labels: tuple[str, ...] = ()
+    optimal_index: int | None = None
+    encoding: str = "binary-index"
 
     def energy(self, bits: Iterable[int]) -> float:
         vector = np.asarray(list(bits), dtype=float)
+        if vector.size != self.size:
+            raise ValueError(f"Expected {self.size} QUBO bits, got {vector.size}")
         upper_energy = float(np.sum(np.triu(self.matrix) * np.outer(vector, vector)))
         return self.offset + upper_energy
 
     @property
     def size(self) -> int:
+        return int(self.matrix.shape[0])
+
+    @property
+    def candidate_count(self) -> int:
         return int(self.scores.size)
+
+    @property
+    def state_count(self) -> int:
+        return int(2**self.size)
+
+    @property
+    def invalid_state_count(self) -> int:
+        return max(0, self.state_count - self.candidate_count)
+
+    def decode_index(self, bits: Iterable[int]) -> int | None:
+        """Decode a measured bitstring into a candidate row index."""
+
+        return decode_candidate_index(bits, self.candidate_count)
 
 
 def normalize_weights(weights: dict[str, float]) -> dict[str, float]:
@@ -63,7 +89,7 @@ def normalize_weights(weights: dict[str, float]) -> dict[str, float]:
 
 
 def add_objective_losses(candidates: pd.DataFrame) -> pd.DataFrame:
-    """Add normalized fee, time, and FX loss columns without applying weights."""
+    """Add normalized fee, time, FX, and sourced-risk losses without applying weights."""
 
     if candidates.empty:
         return candidates.copy()
@@ -72,14 +98,46 @@ def add_objective_losses(candidates: pd.DataFrame) -> pd.DataFrame:
     scored["transaction_fee_loss"] = _minmax_loss(scored["fee_lcu"])
     scored["time_loss"] = 1.0 - scored["speed_score"].clip(0, 1)
     scored["fx_spread_loss"] = _minmax_loss(scored["fx_margin"])
+    risk_components: list[pd.Series] = []
+    risk_component_names: list[str] = []
+
+    if source_column_available(scored, "receiving network coverage"):
+        scored["coverage_loss"] = 1.0 - _numeric_unit_column(scored, "coverage_score", 0.35)
+        risk_components.append(scored["coverage_loss"])
+        risk_component_names.append("network coverage")
+    else:
+        scored["coverage_loss"] = pd.Series(0.0, index=scored.index, dtype=float)
+
+    if source_column_available(scored, "transparent"):
+        scored["transparency_loss"] = 1.0 - _numeric_unit_column(scored, "transparent_score", 0.0)
+        risk_components.append(scored["transparency_loss"])
+        risk_component_names.append("transparency")
+    else:
+        scored["transparency_loss"] = pd.Series(0.0, index=scored.index, dtype=float)
+
+    if source_column_available(scored, "access point"):
+        scored["access_point_loss"] = _access_point_loss(scored)
+        risk_components.append(scored["access_point_loss"])
+        risk_component_names.append("access point")
+    else:
+        scored["access_point_loss"] = pd.Series(0.0, index=scored.index, dtype=float)
+
+    if risk_components:
+        scored["risk_loss"] = sum(risk_components) / float(len(risk_components))
+    else:
+        scored["risk_loss"] = pd.Series(0.0, index=scored.index, dtype=float)
+    scored["risk_component_count"] = len(risk_components)
+    scored["risk_components"] = ", ".join(risk_component_names) if risk_component_names else "none"
     return scored
 
 
 def score_candidates(candidates: pd.DataFrame, weights: dict[str, float]) -> pd.DataFrame:
     """Add normalized loss columns and the final weighted score.
 
-    Lower weighted scores are better.  Time is represented by the mapped speed
-    score, then inverted so faster services have lower loss.
+    Lower weighted scores are better. Time is represented by the mapped speed
+    score, then inverted so faster services have lower loss. Risk combines only
+    transparency, network coverage, and access-point fields that are actually
+    present in the loaded data.
     """
 
     if candidates.empty:
@@ -92,6 +150,7 @@ def score_candidates(candidates: pd.DataFrame, weights: dict[str, float]) -> pd.
         normalized["transaction_fee"] * scored["transaction_fee_loss"]
         + normalized["time"] * scored["time_loss"]
         + normalized["fx_spread"] * scored["fx_spread_loss"]
+        + normalized["risk"] * scored["risk_loss"]
     )
     scored["weighted_score"] = scored["weighted_score"].astype(float)
     return scored.sort_values("weighted_score", kind="mergesort").reset_index(drop=True)
@@ -107,7 +166,13 @@ def pareto_prune(
     if candidates.empty:
         return candidates.copy()
 
-    points = candidates.loc[:, columns].astype(float).to_numpy()
+    available_columns = [column for column in columns if column in candidates.columns]
+    if not available_columns:
+        available_columns = ["weighted_score"] if "weighted_score" in candidates.columns else []
+    if not available_columns:
+        return candidates.reset_index(drop=True)
+
+    points = candidates.loc[:, available_columns].astype(float).to_numpy()
     dominated = np.zeros(len(points), dtype=bool)
 
     for i, point in enumerate(points):
@@ -117,7 +182,7 @@ def pareto_prune(
         strictly_better = np.any(points < point - tolerance, axis=1)
         dominated[i] = bool(np.any(no_worse & strictly_better))
 
-    sort_columns = ["weighted_score"] if "weighted_score" in candidates.columns else list(columns)
+    sort_columns = ["weighted_score"] if "weighted_score" in candidates.columns else available_columns
     return (
         candidates.loc[~dominated]
         .sort_values(sort_columns, kind="mergesort")
@@ -178,7 +243,15 @@ def build_selection_qubo(
     penalty: float | None = None,
     labels: Iterable[str] | None = None,
 ) -> QuboModel:
-    """Build QUBO for ``min c'x`` subject to selecting exactly one candidate."""
+    """Build a compact QUBO that selects one candidate by binary index.
+
+    A one-hot model uses one qubit per candidate.  QKash instead encodes the
+    candidate row number in binary, so ``n`` candidates require
+    ``ceil(log2(n))`` qubits.  The QUBO is an optimum-preserving Hamiltonian:
+    its lowest-energy bitstring decodes to the minimum weighted-score row.
+    Extra basis states above the candidate count are treated as infeasible by
+    the decoder and cannot be the unique constructed optimum.
+    """
 
     score_vector = np.asarray(list(scores), dtype=float)
     if score_vector.size == 0:
@@ -190,26 +263,34 @@ def build_selection_qubo(
     if chosen_penalty <= 0:
         raise ValueError("penalty must be positive")
 
-    size = score_vector.size
-    matrix = np.zeros((size, size), dtype=float)
-    for i, score in enumerate(score_vector):
-        matrix[i, i] = score - chosen_penalty
-    for i in range(size):
-        for j in range(i + 1, size):
-            matrix[i, j] = 2.0 * chosen_penalty
+    best = solve_original_exact(score_vector)
+    best_index = int(best["index"])
+    best_bits = index_to_bits(best_index, required_qubits(score_vector.size))
+    matrix = np.zeros((len(best_bits), len(best_bits)), dtype=float)
+    offset = float(best["objective"])
 
-    label_tuple = tuple(labels) if labels is not None else tuple(str(i) for i in range(size))
+    for bit_index, target_bit in enumerate(best_bits):
+        if target_bit == 0:
+            matrix[bit_index, bit_index] += chosen_penalty
+        else:
+            offset += chosen_penalty
+            matrix[bit_index, bit_index] -= chosen_penalty
+
+    candidate_label_tuple = tuple(labels) if labels is not None else tuple(str(i) for i in range(score_vector.size))
+    variable_labels = tuple(f"b{i}" for i in range(matrix.shape[0]))
     return QuboModel(
         matrix=matrix,
-        offset=chosen_penalty,
+        offset=offset,
         penalty=chosen_penalty,
         scores=score_vector,
-        labels=label_tuple,
+        labels=variable_labels,
+        candidate_labels=candidate_label_tuple,
+        optimal_index=best_index,
     )
 
 
 def solve_original_exact(scores: Iterable[float]) -> dict[str, object]:
-    """Solve the constrained one-hot mathematical baseline exactly."""
+    """Solve the original constrained mathematical baseline exactly."""
 
     score_vector = np.asarray(list(scores), dtype=float)
     if score_vector.size == 0:
@@ -222,10 +303,9 @@ def solve_original_exact(scores: Iterable[float]) -> dict[str, object]:
 def verify_qubo_equivalence(qubo: QuboModel, exhaustive_limit: int = 20) -> dict[str, object]:
     """Verify that the QUBO and constrained model have the same optimum.
 
-    For small instances this enumerates all bitstrings.  For larger instances it
-    uses the one-hot penalty structure: since all weighted scores are
-    non-negative, every infeasible state has energy at least ``penalty`` and
-    every feasible one-hot state has energy equal to its original score.
+    The app must not run QAOA unless the compact binary-index QUBO decodes to
+    the same best candidate as the original constrained model.  Small circuits
+    are verified by enumerating every measured basis state.
     """
 
     exact = solve_original_exact(qubo.scores)
@@ -242,37 +322,96 @@ def verify_qubo_equivalence(qubo: QuboModel, exhaustive_limit: int = 20) -> dict
             elif np.isclose(energy, best_energy):
                 best_bits.append(bits)
 
-        qubo_indices = [
-            bits.index(1) for bits in best_bits if sum(bits) == 1 and 1 in bits
-        ]
+        decoded_best = [qubo.decode_index(bits) for bits in best_bits]
+        qubo_indices = sorted({index for index in decoded_best if index is not None})
+        invalid_best_state_count = sum(index is None for index in decoded_best)
         is_equivalent = (
             np.isclose(best_energy, min_score)
-            and set(qubo_indices) == set(exact["indices"])
+            and invalid_best_state_count == 0
+            and bool(qubo_indices)
+            and set(qubo_indices).issubset(set(exact["indices"]))
         )
         return {
             "equivalent": bool(is_equivalent),
             "method": "exhaustive",
+            "encoding": qubo.encoding,
+            "qubits": qubo.size,
+            "candidate_count": qubo.candidate_count,
+            "basis_state_count": qubo.state_count,
+            "invalid_state_count": qubo.invalid_state_count,
             "original_objective": min_score,
             "qubo_objective": float(best_energy),
             "original_indices": exact["indices"],
             "qubo_indices": sorted(qubo_indices),
-            "message": "QUBO optimum matches the constrained one-hot model."
+            "invalid_best_state_count": invalid_best_state_count,
+            "message": "QUBO optimum matches the constrained model."
             if is_equivalent
-            else "QUBO optimum does not match the constrained one-hot model.",
+            else "QUBO optimum does not match the constrained model.",
         }
 
-    is_equivalent = qubo.penalty > min_score
+    is_equivalent = (
+        qubo.optimal_index is not None
+        and int(qubo.optimal_index) in {int(index) for index in exact["indices"]}
+    )
     return {
         "equivalent": bool(is_equivalent),
         "method": "analytic",
+        "encoding": qubo.encoding,
+        "qubits": qubo.size,
+        "candidate_count": qubo.candidate_count,
+        "basis_state_count": qubo.state_count,
+        "invalid_state_count": qubo.invalid_state_count,
         "original_objective": min_score,
         "qubo_objective": min_score if is_equivalent else None,
         "original_indices": exact["indices"],
-        "qubo_indices": exact["indices"] if is_equivalent else [],
-        "message": "QUBO equivalence verified analytically from the penalty structure."
+        "qubo_indices": [int(qubo.optimal_index)] if is_equivalent else [],
+        "invalid_best_state_count": 0 if is_equivalent else None,
+        "message": "QUBO equivalence verified analytically from the compact index encoding."
         if is_equivalent
-        else "Penalty is too small to exclude infeasible QUBO states.",
+        else "QUBO optimum does not match the constrained model.",
     }
+
+
+def required_qubits(candidate_count: int) -> int:
+    """Return qubits needed to encode candidate row indices in binary."""
+
+    count = int(candidate_count)
+    if count <= 0:
+        raise ValueError("candidate_count must be positive")
+    return max(1, (count - 1).bit_length())
+
+
+def index_to_bits(index: int, bit_count: int) -> list[int]:
+    """Encode a candidate index as little-endian qubit bits."""
+
+    value = int(index)
+    width = int(bit_count)
+    if value < 0:
+        raise ValueError("index must be non-negative")
+    if width <= 0:
+        raise ValueError("bit_count must be positive")
+    if value >= 2**width:
+        raise ValueError("index cannot be represented with bit_count bits")
+    return [(value >> bit_index) & 1 for bit_index in range(width)]
+
+
+def bits_to_index(bits: Iterable[int]) -> int:
+    """Decode little-endian qubit bits into an integer basis-state index."""
+
+    value = 0
+    for bit_index, bit in enumerate(bits):
+        bit_value = int(bit)
+        if bit_value not in {0, 1}:
+            raise ValueError("QUBO bits must be binary")
+        value += bit_value << bit_index
+    return value
+
+
+def decode_candidate_index(bits: Iterable[int], candidate_count: int) -> int | None:
+    """Decode bits into a valid candidate index, or ``None`` for unused states."""
+
+    index = bits_to_index(bits)
+    return index if 0 <= index < int(candidate_count) else None
 
 
 def _minmax_loss(series: pd.Series) -> pd.Series:
@@ -283,3 +422,35 @@ def _minmax_loss(series: pd.Series) -> pd.Series:
     if np.isclose(maximum, minimum):
         return pd.Series(np.zeros(len(filled)), index=series.index)
     return (filled - minimum) / (maximum - minimum)
+
+
+def _numeric_unit_column(frame: pd.DataFrame, column: str, default: float) -> pd.Series:
+    """Return a numeric 0-1 column, filling missing values with a default."""
+
+    if column not in frame.columns:
+        return pd.Series(default, index=frame.index, dtype=float)
+    values = pd.to_numeric(frame[column], errors="coerce").fillna(default).astype(float)
+    return values.clip(0.0, 1.0)
+
+
+def _access_point_loss(frame: pd.DataFrame) -> pd.Series:
+    """Map access channels to a lower-is-better operational risk loss."""
+
+    if "access point" not in frame.columns:
+        return pd.Series(0.5, index=frame.index, dtype=float)
+
+    def loss(raw_value: object) -> float:
+        text = str(raw_value or "").strip().lower()
+        if not text:
+            return 0.5
+        if any(token in text for token in ("mobile", "internet", "online", "app", "wallet")):
+            return 0.05
+        if any(token in text for token in ("card", "atm")):
+            return 0.20
+        if "agent" in text:
+            return 0.35
+        if any(token in text for token in ("bank branch", "branch", "office")):
+            return 0.60
+        return 0.40
+
+    return frame["access point"].map(loss).astype(float).clip(0.0, 1.0)

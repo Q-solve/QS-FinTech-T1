@@ -15,6 +15,12 @@ from qkash.benchmark import (
     summarize_samples,
     validate_solver_outputs,
 )
+from qkash.batch import (
+    DEFAULT_BATCH_CANDIDATE_CAP,
+    DEFAULT_BATCH_PLAN_CAP,
+    BatchSettings,
+    build_batch_plans,
+)
 from qkash.classical import (
     business_as_usual_baseline,
     exact_mathematical_baseline,
@@ -23,6 +29,7 @@ from qkash.classical import (
     lowest_fx_heuristic,
     simulated_annealing,
 )
+from qkash.constraints import PolicyConstraints, apply_policy_constraints
 from qkash.data import (
     DEFAULT_DATA_PATH,
     FilterSpec,
@@ -44,6 +51,7 @@ from qkash.scoring import (
     add_objective_losses,
     build_selection_qubo,
     pareto_prune,
+    required_qubits,
     score_candidates,
     select_qubo_candidates,
     solve_original_exact,
@@ -129,6 +137,7 @@ def display_candidate(row: pd.Series) -> dict[str, object]:
         "settlement_time": row["speed actual"],
         "transaction_fee": row["fee_lcu"],
         "fx_spread": row["fx_margin"],
+        "risk_loss": row.get("risk_loss", np.nan),
         "overall_performance": performance_score(row),
         "weighted_score": row["weighted_score"],
     }
@@ -177,7 +186,7 @@ def solution_frame(results: list[dict[str, object]], candidates: pd.DataFrame) -
 
 
 def feasible_solution_frame(candidates: pd.DataFrame) -> pd.DataFrame:
-    """Return every one-hot feasible service solution ranked by weighted score."""
+    """Return every feasible decoded service solution ranked by weighted score."""
 
     ranked = candidates.copy().reset_index(drop=True)
     ranked = ranked.sort_values(
@@ -191,13 +200,16 @@ def feasible_solution_frame(candidates: pd.DataFrame) -> pd.DataFrame:
         rows.append(
             {
                 "rank": rank,
+                "binary_state": row.get("binary_state", ""),
                 "service_provider": row["firm"],
                 "payment_method": row["payment instrument"],
                 "receiving_method": row["pickup method"],
                 "settlement_time": row["speed actual"],
                 "transaction_fee": fee_text(row),
                 "fx_spread": f"{float(row['fx_margin']):.2f}%",
+                "risk_loss": float(row.get("risk_loss", 0.0)),
                 "service_profile": row.get("service_profile_label", ""),
+                "selected_services": row.get("batch_selected_services", ""),
                 "overall_performance": performance_score(row),
                 "weighted_score": float(row["weighted_score"]),
             }
@@ -265,18 +277,44 @@ def render_consumer_recommendation(
         f"{inference.profile_label}."
     )
 
+    if bool(recommendation.get("batch_mode", False)):
+        st.subheader("Batch Assignment")
+        st.caption(
+            f"{int(recommendation.get('batch_transfer_count', 1))} transfers optimized together. "
+            f"Provider counts: {recommendation.get('batch_provider_counts', {})}"
+        )
+        st.dataframe(
+            batch_assignment_frame(recommendation),
+            width="stretch",
+            hide_index=True,
+        )
+
     st.subheader("Available Feasible Solutions")
-    st.caption("Every row is a valid one-service solution in the verified optimization model.")
+    st.caption("Every row is a valid solution in the verified optimization model.")
     feasible = feasible_solution_frame(model_candidates)
     st.dataframe(
         feasible.style.format(
             {
+                "risk_loss": "{:.3f}",
                 "overall_performance": "{:.1f}%",
                 "weighted_score": "{:.6f}",
             }
         ),
         width="stretch",
         hide_index=True,
+    )
+
+
+def batch_assignment_frame(recommendation: pd.Series) -> pd.DataFrame:
+    """Split a selected batch plan into readable assignment rows."""
+
+    raw_services = str(recommendation.get("batch_selected_services", ""))
+    services = [service for service in raw_services.split(" || ") if service]
+    return pd.DataFrame(
+        [
+            {"transfer": number, "selected_service": service}
+            for number, service in enumerate(services, start=1)
+        ]
     )
 
 
@@ -440,6 +478,8 @@ def render_research_dashboard(
     amount_match: object,
     verification: dict[str, object],
     qubo: object,
+    policy_report: dict[str, object],
+    batch_report: dict[str, object],
 ) -> None:
     """Render solver metrics, ML profile details, QUBO validation, and circuit output."""
 
@@ -473,6 +513,15 @@ def render_research_dashboard(
         st.warning("Some solvers did not execute successfully")
         st.dataframe(pd.DataFrame(execution_failures), width="stretch", hide_index=True)
 
+    with st.expander("Policy and batch constraints"):
+        report_col, batch_col = st.columns(2)
+        with report_col:
+            st.caption("Hard eligibility constraints")
+            st.json(policy_report)
+        with batch_col:
+            st.caption("Batch/provider concentration constraints")
+            st.json(batch_report)
+
     st.subheader("Core Metrics")
     st.dataframe(
         metrics.style.format(
@@ -501,6 +550,7 @@ def render_research_dashboard(
     st.subheader("QUBO candidate set")
     columns = [
         "candidate_index",
+        "binary_state",
         "model_source",
         "service_profile_label",
         "firm",
@@ -515,6 +565,14 @@ def render_research_dashboard(
         "transaction_fee_loss",
         "time_loss",
         "fx_spread_loss",
+        "risk_loss",
+        "coverage_loss",
+        "transparency_loss",
+        "access_point_loss",
+        "settlement_days",
+        "batch_transfer_count",
+        "batch_provider_counts",
+        "batch_selected_services",
         "weighted_score",
     ]
     visible_columns = [column for column in columns if column in model_candidates.columns]
@@ -563,13 +621,16 @@ def render_quantum_circuit(results: list[dict[str, object]]) -> None:
         st.info(str(quantum_result.get("note", "QAOA did not run.")))
         return
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4, col5 = st.columns(5)
     col1.metric("Qubits", int(quantum_result.get("circuit_num_qubits", 0)))
-    col2.metric("Depth", int(quantum_result.get("circuit_depth", 0)))
-    col3.metric("Width", int(quantum_result.get("circuit_width", 0)))
+    col2.metric("Candidate rows", int(quantum_result.get("candidate_count", 0)))
+    col3.metric("Basis states", int(quantum_result.get("basis_state_count", 0)))
+    col4.metric("Circuit iterations", int(quantum_result.get("execution_iterations", 1)))
+    col5.metric("Depth", int(quantum_result.get("circuit_depth", 0)))
     st.caption(
         f"Optimized locally with {quantum_result.get('optimization_backend', 'unknown')} | "
         f"Final execution: {quantum_result.get('execution_backend', 'unknown')} | "
+        f"Total shots: {int(quantum_result.get('total_shots', 0))} | "
         f"Job: {quantum_result.get('job_id') or 'local/no job id'}"
     )
 
@@ -580,6 +641,10 @@ def render_quantum_circuit(results: list[dict[str, object]]) -> None:
                 "optimized_parameters": quantum_result.get("parameters", []),
                 "gate_counts": quantum_result.get("circuit_gate_counts", {}),
                 "measurement_counts": quantum_result.get("measurement_counts", {}),
+                "execution_iterations": quantum_result.get("execution_iterations", 1),
+                "shots_per_iteration": quantum_result.get("shots_per_iteration", 0),
+                "total_shots": quantum_result.get("total_shots", 0),
+                "job_ids": quantum_result.get("job_ids", []),
                 "note": quantum_result.get("note", ""),
             }
         )
@@ -609,8 +674,56 @@ def main() -> None:
         with st.expander("Research settings"):
             st.caption(
                 f"QUBO candidate cap: {MODEL_CANDIDATE_CAP}. "
-                "QAOA qubits equal the number of selected model candidates."
+                "QAOA qubits use compact binary indexing: ceil(log2(candidate rows))."
             )
+            st.markdown("Policy constraints")
+            max_total_cost_pct = st.number_input(
+                "Max total cost %",
+                min_value=0.0,
+                value=100.0,
+                step=0.5,
+            )
+            max_settlement_days = st.number_input(
+                "Max settlement days",
+                min_value=0.0,
+                value=5.0,
+                step=0.5,
+            )
+            require_transparency = st.checkbox("Require transparent pricing", value=False)
+            min_coverage_score = st.slider("Minimum network coverage score", 0.0, 1.0, 0.0, 0.05)
+            access_point_options = unique_values(raw, "access point")
+            selected_access_points = st.multiselect(
+                "Allowed access points",
+                access_point_options,
+                default=access_point_options,
+            )
+
+            st.markdown("Batch research")
+            batch_transfer_count = st.number_input(
+                "Batch transfers",
+                min_value=1,
+                max_value=4,
+                value=1,
+                step=1,
+                help="Optimize several transfers together for provider-concentration tests.",
+            )
+            max_provider_share_pct = st.slider(
+                "Max provider concentration %",
+                min_value=25,
+                max_value=100,
+                value=100,
+                step=5,
+            )
+            batch_candidate_cap = st.slider(
+                "Batch candidate cap",
+                2,
+                MODEL_CANDIDATE_CAP,
+                min(DEFAULT_BATCH_CANDIDATE_CAP, MODEL_CANDIDATE_CAP),
+                1,
+            )
+            batch_plan_cap = st.slider("Batch plan cap", 8, 256, DEFAULT_BATCH_PLAN_CAP, 8)
+
+            st.markdown("Solver controls")
             penalty_multiplier = st.slider("QUBO penalty multiplier", 1.1, 5.0, 2.0, 0.1)
             sa_reads = st.slider("Annealing reads", 16, 512, 128, 16)
             sa_sweeps = st.slider("Annealing sweeps", 100, 3000, 600, 100)
@@ -628,6 +741,14 @@ def main() -> None:
             )
             qaoa_reps = st.slider("QAOA depth", 1, 3, 1)
             qaoa_shots = st.slider("QAOA shots", 64, 4096, 512, 64)
+            qaoa_circuit_iterations = st.number_input(
+                "QAOA circuit iterations",
+                min_value=1,
+                max_value=50,
+                value=3,
+                step=1,
+                help="How many times to execute the final optimized QAOA circuit.",
+            )
             qaoa_optimizer_iterations = st.slider("QAOA optimizer iterations", 8, 120, 40, 4)
             qbraid_timeout_s = st.number_input("qBraid timeout seconds", value=300, min_value=30)
             seed = st.number_input("Random seed", value=42, min_value=0, step=1)
@@ -642,6 +763,25 @@ def main() -> None:
         f".env loaded: {qbraid.get('env_file_loaded', False)} | "
         f"target: {qbraid.get('provider', 'local-qiskit')} / "
         f"{qbraid.get('device_id', QBRAID_SIMULATOR_DEVICE_ID)}"
+    )
+    active_access_points = (
+        tuple(selected_access_points)
+        if access_point_options and len(selected_access_points) < len(access_point_options)
+        else ()
+    )
+    policy_constraints = PolicyConstraints(
+        max_total_cost_pct=float(max_total_cost_pct),
+        max_settlement_days=float(max_settlement_days),
+        require_transparency=bool(require_transparency),
+        min_coverage_score=float(min_coverage_score),
+        allowed_access_points=active_access_points,
+        max_provider_share=float(max_provider_share_pct) / 100.0,
+    )
+    batch_settings = BatchSettings(
+        transfer_count=int(batch_transfer_count),
+        max_provider_share=float(max_provider_share_pct) / 100.0,
+        candidate_cap=int(batch_candidate_cap),
+        plan_cap=int(batch_plan_cap),
     )
 
     if not run_button:
@@ -667,7 +807,11 @@ def main() -> None:
     prepared = prepare_candidates(filtered, amount_tier=amount_match.amount_tier)
     service_options = latest_service_options(prepared)
     loss_candidates = add_objective_losses(service_options)
-    pruned = pareto_prune(loss_candidates)
+    constrained_candidates, policy_report = apply_policy_constraints(
+        loss_candidates,
+        policy_constraints,
+    )
+    pruned = pareto_prune(constrained_candidates)
     run_status.write("Inferring the internal use-case policy from service profiles.")
     profiled_candidates, inference = infer_use_case_policy(
         pruned,
@@ -675,24 +819,45 @@ def main() -> None:
         random_state=int(seed),
     )
     scored = score_candidates(profiled_candidates, inference.weights)
-    model_candidates, _ = select_qubo_candidates(scored, MODEL_CANDIDATE_CAP)
+    service_model_candidates, _ = select_qubo_candidates(scored, MODEL_CANDIDATE_CAP)
+    model_candidates, batch_report = build_batch_plans(service_model_candidates, batch_settings)
     model_candidates["candidate_index"] = np.arange(len(model_candidates), dtype=int)
+    qubit_count = required_qubits(len(model_candidates)) if not model_candidates.empty else 0
+    basis_state_count = 2**qubit_count if qubit_count else 0
+    if qubit_count:
+        model_candidates["binary_state"] = [
+            format(int(index), f"0{qubit_count}b")
+            for index in model_candidates["candidate_index"]
+        ]
 
-    count_cols = st.columns(4)
+    count_cols = st.columns(6)
     count_cols[0].metric("Filtered rows", f"{len(filtered):,}")
     count_cols[1].metric("Service options", f"{len(service_options):,}")
-    count_cols[2].metric("Pareto rows", f"{len(pruned):,}")
-    count_cols[3].metric("Model variables", f"{len(model_candidates):,}")
+    count_cols[2].metric("Eligible services", f"{len(constrained_candidates):,}")
+    count_cols[3].metric("Pareto rows", f"{len(pruned):,}")
+    count_cols[4].metric("Model candidates", f"{len(model_candidates):,}")
+    count_cols[5].metric("QAOA qubits", f"{qubit_count:,}")
 
     if model_candidates.empty:
         run_status.update(label="Optimization stopped", state="error", expanded=True)
-        st.error("No candidates remain after corridor, amount, and Pareto filtering.")
+        st.error(
+            "No candidates remain after corridor, amount, policy constraints, "
+            "Pareto filtering, and batch planning."
+        )
+        with st.expander("Constraint details", expanded=True):
+            st.json({"policy": policy_report, "batch": batch_report})
         return
 
+    st.caption(
+        f"Compact QUBO encoding: {len(model_candidates):,} candidates use "
+        f"{qubit_count:,} qubits, giving {basis_state_count:,} possible basis states."
+    )
     run_status.write("Building the QUBO and validating it against the constrained model.")
     scores = model_candidates["weighted_score"].to_numpy(dtype=float)
     labels = [
-        f"{row['firm']} | {row['payment instrument']} | {row['pickup method']}"
+        str(row.get("batch_selected_services"))
+        if row.get("batch_selected_services")
+        else f"{row['firm']} | {row['payment instrument']} | {row['pickup method']}"
         for _, row in model_candidates.iterrows()
     ]
     base_penalty = max(1.0, float(scores.max()))
@@ -729,7 +894,9 @@ def main() -> None:
     ]
 
     if run_quantum:
-        run_status.write("Running the QAOA quantum circuit.")
+        run_status.write(
+            f"Running the QAOA quantum circuit for {int(qaoa_circuit_iterations)} iteration(s)."
+        )
         with st.spinner("Running QAOA circuit"):
             results.append(
                 run_qaoa(
@@ -739,6 +906,7 @@ def main() -> None:
                     max_qubits=MODEL_CANDIDATE_CAP,
                     seed=int(seed),
                     optimizer_maxiter=int(qaoa_optimizer_iterations),
+                    execution_iterations=int(qaoa_circuit_iterations),
                     backend_name=quantum_backend["backend_name"],
                     qbraid_device_id=selected_device_id,
                     qbraid_timeout_s=int(qbraid_timeout_s),
@@ -806,6 +974,8 @@ def main() -> None:
             amount_match=amount_match,
             verification=verification,
             qubo=qubo,
+            policy_report=policy_report,
+            batch_report=batch_report,
         )
 
 

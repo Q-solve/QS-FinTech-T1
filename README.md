@@ -68,17 +68,21 @@ The order is fixed, and filtering before pruning is enforced by test.
 3. Match the transfer amount to the closest historical RPW amount tier (`cc1` or `cc2`).
 4. Filter by source and destination, then build amount-specific fee, FX, and time features.
 5. Keep the latest observation for each provider/payment/receiving-method service option.
-6. Compute fee, FX-spread, and settlement-time losses, then Pareto prune before any weighting.
-7. Use K-Means to identify natural service profiles in the Pareto set.
-8. Use a Random Forest classifier trained on those cluster-derived labels to infer the transaction
+6. Compute fee, FX-spread, settlement-time, and risk losses.
+7. Apply hard policy constraints for total cost, settlement time, transparency, network coverage,
+   and access point, then Pareto prune before any weighting.
+8. Use K-Means to identify natural service profiles in the Pareto set.
+9. Use a Random Forest classifier trained on those cluster-derived labels to infer the transaction
    use-case profile.
-9. Convert the inferred profile into internal objective weights; the user is never asked for weights.
-10. Score the remaining candidates, cap the QUBO candidate set for the configured qubit budget, and
-    build the constrained one-service model and equivalent QUBO.
-11. Verify QUBO equivalence. **A failed check aborts the run before QAOA.**
-12. Compare business as usual, exact optimization, lowest-fee/fastest/lowest-FX heuristics,
+10. Convert the inferred profile into internal objective weights; the user is never asked for weights.
+11. Score the remaining candidates, cap the candidate set, and optionally build provider-constrained
+    batch-transfer plans.
+12. Build a compact binary-index QUBO where `n` candidate rows or batch plans use
+    `ceil(log2(n))` qubits.
+13. Verify QUBO equivalence. **A failed check aborts the run before QAOA.**
+14. Compare business as usual, exact optimization, lowest-fee/fastest/lowest-FX heuristics,
     simulated annealing, and QAOA.
-13. Validate every solver's samples before reporting any metric.
+15. Validate every solver's samples before reporting any metric.
 
 Steps 8 and 10 are gates, not diagnostics. Neither can be bypassed from the UI.
 
@@ -108,7 +112,8 @@ QAOA uses a fixed execution order:
 
 1. Optimize gamma and beta locally with Qiskit Aer.
 2. Construct the optimized measured circuit.
-3. Execute that final circuit once, with either `LocalAerBackend` or `QBraidBackend`.
+3. Execute that final circuit for the configured number of circuit iterations, with either
+   `LocalAerBackend` or `QBraidBackend`.
 
 **The app never submits qBraid jobs during parameter optimization.** qBraid is used only for the
 final optimized circuit, and only when the qBraid backend is selected.
@@ -118,20 +123,22 @@ final optimized circuit, and only when the qBraid backend is selected.
 These are documented in full in the linked pages, and are summarized here so they are not
 discovered late:
 
-- **The consumer model recommends one service option.** Exact classical optimization remains a very
-  strong baseline for one-of-N selection, so the research dashboard tests quantum performance rather
-  than assuming quantum advantage.
+- **Single-transfer mode remains easy for classical solvers.** Batch research mode adds provider
+  concentration, but exact classical optimization remains a strong baseline at the current small
+  problem sizes.
 - **K-Means and Random Forest labels are pseudo-supervised.** The dataset has service attributes but
   not explicit consumer use-case labels, so profiles are inferred from cost, FX, time, and channel
   features.
-- **`receiving network coverage` and `access point` are absent from this export.** The loader creates
-  them empty, so `coverage_score` is a constant 0.35 and the coverage column in the candidate table
-  renders blank. Neither currently affects a score.
+- **`receiving network coverage` and `access point` may be absent from older exports.** The loader
+  creates compatibility columns, but policy constraints and risk scoring only use them when the
+  fields are actually sourced and non-empty.
 
 ## Layout
 
 ```
 app.py                   Streamlit consumer UI, research dashboard, and run orchestration
+qkash/batch.py           Batch-transfer plan enumeration and provider concentration checks
+qkash/constraints.py     Cost, time, transparency, coverage, and access-point eligibility filters
 qkash/data.py            Loading, normalization, corridor filtering, amount matching
 qkash/profiling.py       K-Means service profiles and Random Forest policy inference
 qkash/scoring.py         Objective losses, internal scoring, Pareto pruning, QUBO verification

@@ -22,6 +22,7 @@ PROFILE_FEATURE_COLUMNS = (
     "transaction_fee_loss",
     "fx_spread_loss",
     "time_loss",
+    "risk_loss",
     "cash_indicator",
     "bank_indicator",
     "mobile_digital_indicator",
@@ -39,12 +40,12 @@ PROFILE_LABELS = {
 
 # PROFILE_POLICIES convert the inferred profile into internal objective weights.
 PROFILE_POLICIES = {
-    "low_cost": {"transaction_fee": 0.50, "fx_spread": 0.35, "time": 0.15},
-    "fast_transfer": {"time": 0.60, "transaction_fee": 0.25, "fx_spread": 0.15},
-    "balanced": {"transaction_fee": 0.34, "fx_spread": 0.33, "time": 0.33},
-    "cash_oriented": {"transaction_fee": 0.40, "time": 0.35, "fx_spread": 0.25},
-    "bank_based": {"fx_spread": 0.40, "transaction_fee": 0.35, "time": 0.25},
-    "mobile_digital": {"time": 0.45, "transaction_fee": 0.35, "fx_spread": 0.20},
+    "low_cost": {"transaction_fee": 0.44, "fx_spread": 0.31, "time": 0.13, "risk": 0.12},
+    "fast_transfer": {"time": 0.50, "transaction_fee": 0.22, "fx_spread": 0.13, "risk": 0.15},
+    "balanced": {"transaction_fee": 0.28, "fx_spread": 0.27, "time": 0.25, "risk": 0.20},
+    "cash_oriented": {"transaction_fee": 0.32, "time": 0.27, "fx_spread": 0.20, "risk": 0.21},
+    "bank_based": {"fx_spread": 0.32, "transaction_fee": 0.28, "time": 0.18, "risk": 0.22},
+    "mobile_digital": {"time": 0.36, "transaction_fee": 0.27, "fx_spread": 0.16, "risk": 0.21},
 }
 
 # DEFAULT_CLUSTER_COUNT is the maximum number of natural service profiles to seek.
@@ -184,6 +185,9 @@ def profile_summary(profiled: pd.DataFrame) -> pd.DataFrame:
             mean_fee_loss=("transaction_fee_loss", "mean"),
             mean_fx_loss=("fx_spread_loss", "mean"),
             mean_time_loss=("time_loss", "mean"),
+            mean_risk_loss=("risk_loss", "mean")
+            if "risk_loss" in profiled.columns
+            else ("transaction_fee_loss", "mean"),
             mean_score=("weighted_score", "mean")
             if "weighted_score" in profiled.columns
             else ("transaction_fee_loss", "mean"),
@@ -243,10 +247,11 @@ def _semantic_profile(center: pd.Series, rows: pd.DataFrame) -> str:
     fee_loss = float(center.get("transaction_fee_loss", 0.0))
     fx_loss = float(center.get("fx_spread_loss", 0.0))
     time_loss = float(center.get("time_loss", 0.0))
+    risk_loss = float(center.get("risk_loss", 0.0))
 
-    if mobile_share >= 0.55 and mobile_share >= max(cash_share, bank_share):
+    if risk_loss <= 0.25 and mobile_share >= 0.45 and mobile_share >= max(cash_share, bank_share):
         return "mobile_digital"
-    if bank_share >= 0.55 and bank_share >= max(cash_share, mobile_share):
+    if risk_loss <= 0.35 and bank_share >= 0.55 and bank_share >= max(cash_share, mobile_share):
         return "bank_based"
     if cash_share >= 0.55 and cash_share >= max(bank_share, mobile_share):
         return "cash_oriented"

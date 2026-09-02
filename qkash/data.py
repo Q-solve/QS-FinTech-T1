@@ -77,6 +77,14 @@ COLUMN_ALIASES = {
     "pick_up_method": "pickup method",
 }
 
+# SOURCE_COLUMN_FLAGS record whether optional modeling columns came from the CSV or were created
+# as empty compatibility columns by the loader.
+SOURCE_COLUMN_FLAGS = {
+    "transparent": "_source_has_transparent",
+    "receiving network coverage": "_source_has_receiving_network_coverage",
+    "access point": "_source_has_access_point",
+}
+
 
 # DATE_FORMATS are the source date spellings the loader accepts, in priority order.
 DATE_FORMATS = ("%d/%b/%Y", "%Y-%m-%d")
@@ -255,6 +263,7 @@ def prepare_candidates(
         errors="coerce",
     )
     prepared["speed_score"] = prepared["speed actual"].map(speed_score).fillna(0.35)
+    prepared["settlement_days"] = prepared["speed actual"].map(settlement_days).fillna(3.0)
     prepared["coverage_score"] = prepared["receiving network coverage"].map(coverage_score).fillna(
         0.35
     )
@@ -312,11 +321,19 @@ def ensure_supported_columns(
             for column in normalized.columns
         }
     )
+    source_columns = set(normalized.columns)
+    source_presence = {
+        column: _existing_source_presence(normalized, flag_column, column in source_columns)
+        for column, flag_column in SOURCE_COLUMN_FLAGS.items()
+    }
 
     for column in TEXT_COLUMNS:
         if column not in normalized.columns:
             normalized[column] = ""
         normalized[column] = normalized[column].fillna("").astype(str).str.strip()
+
+    for column, flag_column in SOURCE_COLUMN_FLAGS.items():
+        normalized[flag_column] = bool(source_presence[column])
 
     if require_numeric:
         missing = [column for column in REQUIRED_NUMERIC_COLUMNS if column not in normalized.columns]
@@ -331,6 +348,28 @@ def ensure_supported_columns(
         normalized["period_order"] = normalized["period"].map(period_order)
 
     return normalized
+
+
+def source_column_available(df: pd.DataFrame, column: str) -> bool:
+    """Return whether an optional source column is present and has usable values."""
+
+    normalized_column = COLUMN_ALIASES.get(
+        _normalize_column_label(column),
+        _normalize_column_label(column),
+    )
+    flag_column = SOURCE_COLUMN_FLAGS.get(normalized_column)
+    if normalized_column not in df.columns:
+        return False
+
+    if flag_column and flag_column in df.columns:
+        has_source = _truthy_series(df[flag_column]).any()
+    else:
+        has_source = True
+    if not bool(has_source):
+        return False
+
+    values = df[normalized_column].fillna("").astype(str).str.strip()
+    return bool(values.ne("").any())
 
 
 def speed_score(label: str | None) -> float:
@@ -348,6 +387,23 @@ def speed_score(label: str | None) -> float:
     if "3-5 days" in value or "3 - 5 days" in value:
         return 0.18
     return 0.35
+
+
+def settlement_days(label: str | None) -> float:
+    """Map delivery speed text to a conservative upper-bound day count."""
+
+    value = (label or "").strip().lower()
+    if "less than one hour" in value:
+        return 1.0 / 24.0
+    if "same day" in value:
+        return 1.0
+    if "next day" in value:
+        return 1.0
+    if "2 days" in value:
+        return 2.0
+    if "3-5 days" in value or "3 - 5 days" in value:
+        return 5.0
+    return 3.0
 
 
 def coverage_score(label: str | None) -> float:
@@ -399,3 +455,26 @@ def _normalize_column_label(column: object) -> str:
     """Normalize a raw CSV column label for matching."""
 
     return str(column).strip().lower()
+
+
+def _existing_source_presence(
+    frame: pd.DataFrame,
+    flag_column: str,
+    fallback: bool,
+) -> bool:
+    """Preserve loader provenance when an already-normalized frame is normalized again."""
+
+    if flag_column not in frame.columns:
+        return bool(fallback)
+    return bool(_truthy_series(frame[flag_column]).any())
+
+
+def _truthy_series(series: pd.Series) -> pd.Series:
+    """Coerce boolean-like provenance flag values safely."""
+
+    if pd.api.types.is_bool_dtype(series):
+        return series.fillna(False).astype(bool)
+    if pd.api.types.is_numeric_dtype(series):
+        return pd.to_numeric(series, errors="coerce").fillna(0).ne(0)
+    normalized = series.fillna("").astype(str).str.strip().str.lower()
+    return normalized.isin({"1", "true", "yes", "y"})

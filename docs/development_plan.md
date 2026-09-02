@@ -4,9 +4,8 @@
 
 Build a reproducible research prototype that recommends an eligible direct remittance
 provider/service and compares QAOA against appropriate classical baselines without claiming an
-advantage in advance. The current five-qubit Kenya → Tanzania instance is a correctness and
-demonstration case; scaling experiments and stronger constrained formulations carry the research
-value.
+advantage in advance. The current compact-QUBO implementation is a correctness and demonstration
+case; scaling experiments and stronger constrained formulations carry the research value.
 
 ## Stage gates and claims policy
 
@@ -35,7 +34,8 @@ Outstanding:
 
 Exit criteria:
 
-- Loading an unmodified CSV reproduces 4,026 rows and 34 columns. **Met.**
+- Loading an unmodified CSV reproduces 4,026 rows and 37 columns after compatibility and provenance
+  columns are added. **Met.**
 - Zero exact duplicates, corridor codes agreeing with source and destination codes, and the CC1 cost
   identity holding within 0.01 percentage points. **All three verified in the audit; not yet
   asserted in code.**
@@ -59,9 +59,10 @@ Still open:
   against the whole raw string and never matches it. Route `pickup method` through `_filter_token`
   as `payment instrument` already is.
 - **Absent coverage field.** `receiving network coverage` does not exist in this export, so
-  `coverage_score` returns 0.35 for every row. Either source the field or remove it from the model
-  and the UI candidate table. Currently latent, since no objective reads it.
-- **Absent `access point` field.** Same situation; the sidebar does not offer this filter.
+  `coverage_score` returns 0.35 for every row. Source-presence flags now keep coverage out of risk
+  scoring and hard constraints until the field is added with real values.
+- **Absent `access point` field.** Same situation; source-presence flags keep access-point policy
+  inactive until sourced.
 
 Also in scope, at Medium severity:
 
@@ -71,7 +72,7 @@ Also in scope, at Medium severity:
 Exit criteria:
 
 - Zero `NaT` values in `date_parsed` for a clean load. **Met.**
-- No candidate carries a defaulted `coverage_score` without an explicit flag.
+- No candidate carries a defaulted `coverage_score` without an explicit source-presence flag.
 - Every option `unique_values` offers for a field returns at least one row when selected.
 - Tests cover both date formats and dropdown/filter agreement.
 
@@ -79,16 +80,13 @@ Exit criteria:
 
 **Status: implemented and specified in [`classical_model.md`](classical_model.md).**
 
-Three objectives — transaction fee, transfer time, FX spread — normalized to `[0, 1]` losses over
-the filtered pool, combined by weights summing to one. `total_cost_pct` is deliberately excluded to
-avoid double-counting fee and FX margin.
+Fee, transfer-time, FX-spread, and sourced-risk losses are normalized over the filtered pool and
+combined by internally inferred weights summing to one. `total_cost_pct` is deliberately excluded
+from the weighted objective to avoid double-counting fee and FX margin; it is now a hard policy
+limit.
 
 Outstanding:
 
-- **Fix the keyword-weighting quirk.** The shipped default query yields 0.2867 / 0.2867 / 0.4266
-  rather than balanced weights, because the three keyword lists differ in length. Either equalize the
-  lists, normalize each objective's hits by its list length, or make the default query use explicit
-  overrides.
 - Decide whether normalization should be computed over the filtered pool or the modelled subset, and
   document the choice with its effect on comparability across runs.
 
@@ -117,16 +115,16 @@ Exit criteria met:
 
 - `verify_qubo_equivalence` gates every run and `app.py` aborts on failure.
 - `validate_solver_outputs` gates every metric.
-- The five-qubit reference instance shows all feasible states below 0.117 and all infeasible states
-  at or above 2.0.
-- QAOA reference results across 10 seeds at `p = 1, 2, 3` are recorded in
-  [`qaoa_experiment.md`](qaoa_experiment.md#reference-results). They show QAOA reproducing the
-  one-hot constraint but not discriminating among feasible candidates, which is the expected
-  consequence of the near-degenerate spectrum.
+- Compact binary-index encoding is documented in [`qubo_formulation.md`](qubo_formulation.md),
+  including the fact that the current Hamiltonian is optimum-preserving rather than a full one-hot
+  score landscape.
+- QAOA execution order is documented in [`qaoa_experiment.md`](qaoa_experiment.md): optimize
+  parameters locally with Aer, construct the optimized circuit, then execute the final circuit
+  locally or through qBraid.
 
 ## Stage 5 — Experiment and scaling framework
 
-**Status: not started. This is where the research value begins.**
+**Status: partially implemented in the UI.**
 
 Currently every run is a one-off through the UI. Required:
 
@@ -166,6 +164,7 @@ extension must add genuine combinatorial structure. Candidates, in rough order o
 - **Multiple simultaneous transactions** across corridors sharing a budget.
 - **Provider or corridor capacity constraints**, making selections interact.
 - **Diversification or fairness constraints** — no more than `k` transfers through one provider.
+  A same-context provider-concentration version is implemented in batch research mode.
 - **Multi-period planning** over the 54 available quarters.
 
 A true network-routing formulation is **not** available from this dataset. As recorded in

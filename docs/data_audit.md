@@ -14,11 +14,13 @@ column, and a CC1 cost identity that holds on every row. The open defects are in
 
 ## Source, method, and integrity
 
-QKash reads a single audited file, and it is not tracked by Git.
+QKash reads a single audited file, and it is not tracked by Git. The loader prefers
+`data/processed/remittance_east_africa_clean.csv` when present, and otherwise falls back to the
+root-level file used in this workspace.
 
 | Property | Value |
 | --- | --- |
-| Path | `data/processed/remittance_east_africa_clean.csv` |
+| Path | `data/remittance_east_africa_clean.csv` |
 | Rows | 4,026 |
 | Columns | 30 |
 | SHA-256 | `0b8f69c8c516fa9ea38951c80724f701ff2b16f2064e37ec3cc66c3b243fac90` |
@@ -35,13 +37,15 @@ Verify integrity before any data work:
 sha256sum data/processed/remittance_east_africa_clean.csv
 ```
 
-`qkash.data.DEFAULT_DATA_PATH` resolves to this path, and `app.py` calls `Path(...).stat()` before
-anything else, so a missing file raises `FileNotFoundError` at startup rather than degrading.
+`qkash.data.DEFAULT_DATA_PATH` resolves to the processed path if it exists, else to this root-level
+path. `app.py` calls `Path(...).stat()` before anything else, so a missing file raises
+`FileNotFoundError` at startup rather than degrading.
 
 ## Schema and loader behaviour
 
-`load_dataset` returns **4,026 rows and 34 columns**: the 30 source columns, two columns QKash
-requires that this export does not contain, and two derived columns (`date_parsed`, `period_order`).
+`load_dataset` returns **4,026 rows and 37 columns**: the 30 source columns, two columns QKash
+can read but this export does not contain, three source-presence flag columns, and two derived
+columns (`date_parsed`, `period_order`).
 
 `ensure_supported_columns` lowercases and strips every label, maps a small alias set through
 `COLUMN_ALIASES`, and creates any missing `TEXT_COLUMNS` as empty strings. The ten
@@ -55,10 +59,10 @@ present here.
 | `access point` | Absent | Created empty. `unique_values` returns no options. Not used by the `app.py` sidebar, so no user-visible break; `FilterSpec.access_point` matches nothing if set. |
 | `receiving network coverage` | Absent | Created empty. `coverage_score` returns its 0.35 default for **all 4,026 rows**. |
 
-`coverage_score` is currently latent: `score_candidates` uses only `fee_lcu`, `speed_score`, and
-`fx_margin`, so the constant column never reaches an objective. It renders as an empty column in the
-UI's candidate table. This must be resolved before coverage is promoted to an objective â€” either by
-sourcing the field or by removing it from the model and the display.
+`coverage_score` is kept as a compatibility feature, but the loader also records whether the
+coverage column came from the CSV. Hard constraints and risk scoring ignore coverage and access point
+when they were created as empty compatibility columns. This must stay true until those fields are
+sourced.
 
 ### Alias handling
 
@@ -249,10 +253,10 @@ extension built on defensible edge data.
 
 | # | Risk | Severity | Status |
 | --- | --- | --- | --- |
-| 1 | `receiving network coverage` absent, so `coverage_score` returns 0.35 for all 4,026 rows | High once coverage becomes an objective | Open, currently unused |
+| 1 | `receiving network coverage` absent, so `coverage_score` returns 0.35 for all 4,026 rows | High once coverage becomes an objective | Guarded by source-presence flags |
 | 2 | `pickup method` option `Mobile` is offered by the UI but always returns zero rows, because `unique_values` tokenizes while `_filter_exact` does not | High | Open |
 | 3 | `pickup method` casing variants fragment the filter and silently exclude rows | Medium | Open |
-| 4 | `access point` absent, so that filter dimension is unavailable | Medium | Open, unused by the sidebar |
+| 4 | `access point` absent, so that filter dimension is unavailable | Medium | Guarded by source-presence flags |
 | 5 | 19 CC2 cost-identity failures, up to 6.21pp | Medium | Retained and documented |
 | 6 | Negative FX margins normalize to the best possible score | Medium | Retained; flag in UI |
 | 7 | 231 null `pickup method` values (5.7%) are excluded by any pickup filter | Low | Inherent to source |
@@ -266,7 +270,8 @@ rows (now zero) and the 969 null `payment instrument` values (now 24). A third â
 ## Obtaining the data
 
 The file is excluded from Git by `data/**/*.csv`. Obtain
-`data/processed/remittance_east_africa_clean.csv` from the project owner, place it at that path, and
+`remittance_east_africa_clean.csv` from the project owner, place it at either
+`data/processed/remittance_east_africa_clean.csv` or `data/remittance_east_africa_clean.csv`, and
 verify its SHA-256 against
 [Source, method, and integrity](#source-method-and-integrity) before use.
 
