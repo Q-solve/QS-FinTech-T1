@@ -27,8 +27,18 @@ PROCESSED_DATA_PATH = PROJECT_ROOT / "data" / "processed" / "remittance_east_afr
 # ROOT_DATA_PATH is the audited RPW extract currently present in this project.
 ROOT_DATA_PATH = PROJECT_ROOT / "data" / "remittance_east_africa_clean.csv"
 
-# DEFAULT_DATA_PATH resolves to the available audited RPW extract.
-DEFAULT_DATA_PATH = PROCESSED_DATA_PATH if PROCESSED_DATA_PATH.exists() else ROOT_DATA_PATH
+# Also accept the legacy/export RPW file `RPW_dataset.csv` if present and prefer
+# it over the default root CSV when the processed export is absent. This lets the
+# app use `data/RPW_dataset.csv` as requested by the user.
+RPW_LEGACY_PATH = PROJECT_ROOT / "data" / "RPW_dataset.csv"
+# DEFAULT_DATA_PATH resolves to the available audited RPW extract, preferring
+# processed exports, then the legacy `RPW_dataset.csv`, then the root CSV.
+if PROCESSED_DATA_PATH.exists():
+    DEFAULT_DATA_PATH = PROCESSED_DATA_PATH
+elif RPW_LEGACY_PATH.exists():
+    DEFAULT_DATA_PATH = RPW_LEGACY_PATH
+else:
+    DEFAULT_DATA_PATH = ROOT_DATA_PATH
 
 # TEXT_COLUMNS are normalized to clean strings during load.
 TEXT_COLUMNS = (

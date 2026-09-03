@@ -41,6 +41,9 @@ class QuantumBackendResult:
     counts: dict[str, int]
     backend_name: str
     runtime_s: float
+    # device_runtime_s is time spent executing on the machine, excluding queue,
+    # network, and submission overhead. None when the backend does not report it.
+    device_runtime_s: float | None = None
     status: str = "ok"
     note: str = ""
     job_id: str | None = None
@@ -107,13 +110,26 @@ class QBraidBackend(QuantumBackend):
         result = job.result(timeout=self.timeout_s)
         counts = _extract_qbraid_counts(result, circuit.num_qubits)
 
+        # Extract machine-only execution time when possible. If available,
+        # prefer it as the backend runtime so submission/network/queue time is
+        # excluded. Always preserve end-to-end wall clock in metadata for
+        # auditing.
+        device_runtime_s, device_time_source = _extract_qbraid_device_runtime(result)
+        end_to_end = time.perf_counter() - started
+        runtime_report = float(device_runtime_s) if device_runtime_s is not None else float(end_to_end)
+
         return QuantumBackendResult(
             counts=counts,
             backend_name=self.name,
-            runtime_s=time.perf_counter() - started,
+            runtime_s=runtime_report,
+            device_runtime_s=device_runtime_s,
             note=f"Executed final optimized circuit through qBraid device {self.device_id}.",
             job_id=str(getattr(job, "id", "")) or None,
-            metadata={"device_id": self.device_id},
+            metadata={
+                "device_id": self.device_id,
+                "device_time_source": device_time_source,
+                "end_to_end_runtime_s": end_to_end,
+            },
         )
 
 
@@ -475,3 +491,90 @@ def _failed_qaoa_result(started: float, status: str, note: str) -> dict[str, obj
         "runtime_s": time.perf_counter() - started,
         "note": note,
     }
+
+
+def _extract_qbraid_device_runtime(result: object) -> tuple[float | None, str | None]:
+    """Attempt to extract device execution duration from qBraid result.
+
+    Returns (seconds, source_label) where seconds is None when unavailable.
+    The function is defensive because qBraid SDK result shapes vary by backend.
+    """
+
+    # Helper to normalize numeric values to seconds.
+    def _to_seconds(value: object) -> float | None:
+        try:
+            num = float(value)
+        except Exception:
+            return None
+        # Heuristic: values > 1000 likely milliseconds.
+        if num > 1000:
+            return num / 1000.0
+        return num
+
+    # Common places to look.
+    candidates = []
+    data = getattr(result, "data", None)
+    if data is not None:
+        candidates.append((data, "result.data"))
+    # Some SDKs put timing on the top-level result
+    candidates.append((result, "result"))
+
+    # Try attribute access first, then mapping-style access where available.
+    for obj, label in candidates:
+        # Attribute names to try.
+        for attr in (
+            "executionDurationMs",
+            "executionDuration",
+            "execution_duration_ms",
+            "execution_duration",
+            "execution_time_ms",
+            "execution_time",
+            "device_execution_time_ms",
+            "device_execution_time",
+            "runtime_ms",
+            "runtime",
+        ):
+            val = None
+            if hasattr(obj, attr):
+                val = getattr(obj, attr)
+            elif isinstance(obj, dict) and attr in obj:
+                val = obj[attr]
+            elif hasattr(obj, "get"):
+                try:
+                    val = obj.get(attr)
+                except Exception:
+                    val = None
+            if val is None:
+                continue
+            secs = _to_seconds(val)
+            if secs is not None:
+                return secs, f"{label}.{attr}"
+
+        # Nested mapping keys like timing.executionDurationMs
+        try:
+            nested = None
+            if hasattr(obj, "timing"):
+                nested = getattr(obj, "timing")
+            elif isinstance(obj, dict) and "timing" in obj:
+                nested = obj["timing"]
+            if nested is not None:
+                for key in ("executionDurationMs", "executionDuration", "execution_time_ms", "execution_time"):
+                    val = None
+                    if hasattr(nested, key):
+                        val = getattr(nested, key)
+                    elif isinstance(nested, dict) and key in nested:
+                        val = nested[key]
+                    elif hasattr(nested, "get"):
+                        try:
+                            val = nested.get(key)
+                        except Exception:
+                            val = None
+                    if val is None:
+                        continue
+                    secs = _to_seconds(val)
+                    if secs is not None:
+                        return secs, f"{label}.timing.{key}"
+        except Exception:
+            pass
+
+    return None, None
