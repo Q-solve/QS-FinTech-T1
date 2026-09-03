@@ -33,6 +33,3 @@ data/raw/
 
 # Tracked project assets kept as exceptions to the rules above.
 !data/QKash.png
-# The audited processed extract is tracked so Render can build the image from
-# this repository, which is private. Raw sources above stay excluded.
-!data/processed/remittance_east_africa_clean.csv
