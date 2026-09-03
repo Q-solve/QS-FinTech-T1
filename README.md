@@ -123,13 +123,13 @@ final optimized circuit, and only when the qBraid backend is selected.
 These are documented in full in the linked pages, and are summarized here so they are not
 discovered late:
 
-- **Single-transfer mode remains easy for classical solvers.** Batch research mode adds provider
+- **Single-transfer mode remains easy for classical solvers.** Batch  research mode adds provider
   concentration, but exact classical optimization remains a strong baseline at the current small
   problem sizes.
 - **K-Means and Random Forest labels are pseudo-supervised.** The dataset has service attributes but
   not explicit consumer use-case labels, so profiles are inferred from cost, FX, time, and channel
   features.
-- **`receiving network coverage` and `access point` may be absent from older exports.** The loader
+- **`receiving network coverage` and `access point` may be absent  from older exports.** The loader
   creates compatibility columns, but policy constraints and risk scoring only use them when the
   fields are actually sourced and non-empty.
 
